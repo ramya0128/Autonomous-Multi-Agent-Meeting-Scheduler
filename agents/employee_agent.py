@@ -245,18 +245,25 @@ if __name__ == "__main__":
     card = make_card(f"{name.title()}'s Calendar Agent",
                      f"Manages {name.title()}'s calendar, checks A2A reschedule requests for "
                      f"conflicts, and accepts meeting invites.", port, skill)
+    # Initialize executor (and calendar verification) first
+    executor = EmployeeExecutor(name)
+
     try:
         import agent_registry
-        display_name = agent_registry.get_employee_names().get(name, f"{name.title()}")
-        agent_registry.register_agent(
-            agent_id=name,
-            url=f"http://127.0.0.1:{port}",
-            name=display_name,
-            role="employee",
-            skills=["calendar", "meetings", "book_meeting"],
-            status="online",
-        )
+        existing = agent_registry.get_agent(name)
+        if existing:
+            agent_registry.update_agent_status(name, "online")
+        else:
+            display_name = agent_registry.get_employee_names().get(name, f"{name.title()}")
+            agent_registry.register_agent(
+                agent_id=name,
+                url=f"http://127.0.0.1:{port}",
+                name=display_name,
+                role="employee",
+                skills=["calendar", "meetings", "book_meeting"],
+                status="online",
+            )
     except Exception as reg_err:
         print(f"Warning: could not register with agent registry: {reg_err}")
     print(f"{name.title()}'s agent on :{port} (model: {MODEL})")
-    serve(card, EmployeeExecutor(name), port)
+    serve(card, executor, port)
