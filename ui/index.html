@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10192b">
+  <title>Gather — Company meeting assistant</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #19243a;
+      --muted: #738097;
+      --line: #e8ecf2;
+      --paper: #fff;
+      --canvas: #f5f7fb;
+      --navy: #111b2d;
+      --blue: #435cf5;
+      --blue-soft: #eef1ff;
+      --mint: #16a785;
+      --red: #d34d5b;
+      --amber: #bd7b19;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f5fa; color: var(--ink); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 236px minmax(0, 1fr); }
+    aside { background: var(--navy); color: #fff; padding: 24px 16px; display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; letter-spacing: -.03em; font-size: 20px; padding: 0 9px 24px; }
+    .brand-mark { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: white; background: linear-gradient(135deg, #7180ff, #455cf2); font-size: 19px; }
+    .nav-label { color: #8793a9; text-transform: uppercase; font-size: 10px; letter-spacing: .13em; padding: 8px 11px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; color: #bac3d2; padding: 11px 12px; border-radius: 9px; font-size: 13px; margin: 2px 0; }
+    .nav-item { text-decoration: none; }
+    .nav-item.active { color: white; background: #25314a; }
+    .nav-icon { width: 18px; text-align: center; font-size: 16px; }
+    .calendar-nav { display: none; margin: 2px 0 8px 27px; }
+    .calendar-nav.visible { display: block; }
+    .calendar-nav button { display: block; width: 100%; border: 0; text-align: left; color: #aeb8c8; background: transparent; padding: 8px 10px; border-radius: 7px; font-size: 11px; }
+    .calendar-nav button:hover, .calendar-nav button.active { color: white; background: #25314a; }
+    .calendar-nav a { display: block; color: #aeb8c8; text-decoration: none; padding: 7px 10px 7px 25px; border-radius: 7px; font-size: 10px; }
+    .calendar-nav a:hover { color: white; background: #25314a; }
+    .side-bottom { margin-top: auto; padding: 16px 9px 0; border-top: 1px solid #2a3549; color: #aeb8c8; font-size: 12px; line-height: 1.6; }
+    .side-bottom strong { color: white; font-weight: 600; }
+    main { min-width: 0; padding: 30px clamp(22px, 3vw, 42px) 42px; max-width: 1680px; width: 100%; margin: 0 auto; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-size: 10px; font-weight: 700; }
+    h1 { font-size: clamp(25px, 3vw, 32px); letter-spacing: -.04em; margin: 7px 0 0; }
+    .top-actions { display: flex; align-items: center; gap: 11px; }
+    .model-chip, .status-chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 999px; background: white; padding: 8px 11px; color: #59657a; font-size: 11px; white-space: nowrap; }
+    .model-chip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); display: inline-block; }
+    .button { border: 0; border-radius: 9px; background: var(--blue); color: white; font-weight: 650; padding: 10px 15px; transition: transform .12s, background .12s; }
+    .button:hover { background: #344ce6; transform: translateY(-1px); }
+    .button:disabled { opacity: .55; cursor: wait; transform: none; }
+    .button.secondary { color: #42506a; background: #f0f3f8; border: 1px solid var(--line); }
+    .button.secondary:hover { background: #e8edf5; }
+    .button.danger { color: #a33441; background: #fff1f2; border: 1px solid #f8dce0; }
+    .meeting-nav { margin: 2px 0 16px; }
+    .meeting-nav button { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 0; text-align: left; color: #b9c3d3; background: transparent; padding: 9px 11px; border-radius: 8px; font-size: 11px; margin: 2px 0; transition: background .15s, color .15s; }
+    .meeting-nav button:hover, .meeting-nav button.active { color: white; background: #25314a; }
+    .meeting-nav-count { color: #98a5ba; font-size: 10px; }
+    .workspace-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(360px, .9fr); align-items: start; gap: 20px; }
+    .panel { background: var(--paper); border: 1px solid #e5e9f1; border-radius: 16px; overflow: hidden; box-shadow: 0 5px 18px #15213a08; }
+    .panel-head { padding: 17px 19px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    h2 { font-size: 15px; letter-spacing: -.02em; margin: 0; }
+    .subhead { color: var(--muted); font-size: 11px; margin-top: 5px; }
+    .meeting-list { padding: 0 17px; }
+    .meeting { padding: 16px 4px; border-bottom: 1px solid var(--line); }
+    .meeting:last-child { border-bottom: 0; }
+    .meeting-main { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+    .meeting-title { font-size: 14px; font-weight: 680; }
+    .meeting-meta { color: var(--muted); font-size: 11px; margin-top: 6px; line-height: 1.7; }
+    .meeting-id { color: #8994a7; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .attendees { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .person { font-size: 10px; border-radius: 999px; padding: 5px 8px; background: #f1f3f8; color: #4f5c73; }
+    .person.pending { background: #fff2d8; color: #805300; }
+    .person.declined { background: #fde8e8; color: #a12828; }
+    .meeting-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
+    .small-btn { border: 1px solid var(--line); background: white; color: #4d5a70; font-size: 10px; font-weight: 650; border-radius: 7px; padding: 6px 8px; }
+    .small-btn:hover { background: #f5f7fb; }
+    .small-btn.remove { color: #ae4650; }
+    .people-list { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 16px 14px; }
+    .agent-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 999px; color: #58657a; font-size: 10px; white-space: nowrap; background: #fff; }
+    .agent-chip .dot { width: 6px; height: 6px; }
+    .agent-chip.offline { color: #a23d48; border-color: #f1d5d8; background: #fff8f8; }
+    .calendar-page { display: none; }
+    .calendar-page.active { display: block; }
+    .calendar-page-layout { display: grid; grid-template-columns: minmax(190px, .65fr) minmax(0, 2fr); gap: 18px; align-items: start; }
+    .calendar-employee-nav { padding: 8px; }
+    .calendar-employee-nav button { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; border: 0; border-radius: 8px; background: transparent; color: var(--ink); padding: 11px 12px; font-size: 12px; }
+    .calendar-employee-nav button:hover, .calendar-employee-nav button.active { background: #f0f3ff; color: #344ce6; }
+    .calendar-count { color: var(--muted); font-size: 10px; }
+    .calendar-events { padding: 5px 20px 18px; }
+    .employee-requests { margin-top: 18px; }
+    .employee-request-list { padding: 5px 20px 18px; }
+    .employee-request { padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .employee-request:last-child { border-bottom: 0; }
+    .employee-request-title { font-size: 12px; font-weight: 680; }
+    .employee-request-meta { color: var(--muted); font-size: 10px; margin-top: 4px; }
+    .employee-request .prompt-text { margin: 10px 0; }
+    .employee-request textarea { min-height: 64px; }
+    .calendar-events .event-line { padding: 10px 0 10px 13px; margin: 8px 0; border-left-width: 3px; }
+    .calendar-events .event-title { font-size: 13px; }
+    .calendar-events .event-time { font-size: 11px; }
+    .event-line { border-left: 2px solid #8692ff; padding: 2px 0 2px 9px; margin: 7px 0; }
+    .event-title { font-size: 10px; font-weight: 600; }
+    .event-time { font-size: 9px; color: var(--muted); margin-top: 3px; }
+    .empty { text-align: center; padding: 35px 15px; color: var(--muted); font-size: 12px; }
+    .chat-panel { display: flex; flex-direction: column; min-height: 620px; height: min(76vh, 820px); }
+    .chat-panel .panel-head { min-height: 76px; }
+    .chat-log { flex: 1; min-height: 300px; overflow-y: auto; padding: 22px; background: #f8f9fc; }
+    .chat-message { max-width: 84%; padding: 11px 14px; border-radius: 13px; margin: 0 0 12px; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .chat-message.user { margin-left: auto; background: var(--blue); color: white; border-bottom-right-radius: 4px; }
+    .chat-message.assistant { background: white; border: 1px solid var(--line); color: var(--ink); border-bottom-left-radius: 4px; box-shadow: 0 2px 5px #15213a06; }
+    .chat-message.pending { border-color: #f0d49a; background: #fffaf0; }
+    .chat-compose { display: flex; align-items: flex-end; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); background: white; }
+    .chat-compose textarea { flex: 1; min-height: 46px; max-height: 140px; resize: vertical; border: 1px solid #dfe4ed; border-radius: 10px; padding: 12px; font-size: 12px; outline: none; }
+    .chat-compose textarea:focus { border-color: #8492ff; box-shadow: 0 0 0 3px #435cf51a; }
+    .chat-hint { color: var(--muted); font-size: 10px; line-height: 1.5; padding: 0 16px 12px; }
+    .meeting-list { max-height: min(58vh, 620px); overflow-y: auto; }
+    .agent-status { margin-top: 14px; }
+    .overview-meetings-heading { font-size: 12px; color: var(--muted); }
+    .error-banner { display: none; margin-bottom: 18px; padding: 11px 14px; border: 1px solid #f2cbd0; background: #fff3f4; color: #9e3541; border-radius: 9px; font-size: 12px; }
+    .toast { position: fixed; z-index: 10; right: 22px; bottom: 22px; padding: 12px 16px; background: #17243a; color: white; border-radius: 9px; font-size: 12px; box-shadow: 0 10px 32px #10203a33; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    dialog { border: 0; border-radius: 16px; width: min(520px, calc(100vw - 30px)); padding: 0; color: var(--ink); box-shadow: 0 25px 80px #0b183044; }
+    dialog::backdrop { background: #10192b88; backdrop-filter: blur(3px); }
+    .dialog-head { padding: 20px 22px 15px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    .dialog-content { padding: 19px 22px 22px; }
+    .close { border: 0; background: transparent; color: #78849a; font-size: 21px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 11px; font-weight: 650; color: #4c5870; }
+    input, select, textarea { width: 100%; border: 1px solid #dfe4ed; border-radius: 8px; padding: 10px 11px; color: var(--ink); background: white; outline: none; font-size: 12px; }
+    input:focus, select:focus, textarea:focus { border-color: #8995ff; box-shadow: 0 0 0 3px #465df21a; }
+    textarea { resize: vertical; min-height: 65px; }
+    .checkboxes { display: flex; gap: 9px; flex-wrap: wrap; }
+    .check-person { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); padding: 8px 9px; border-radius: 8px; font-size: 11px; }
+    .check-person input { width: auto; accent-color: var(--blue); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .prompt-text { background: #fff9ec; color: #73511c; border: 1px solid #f1dfbd; border-radius: 9px; padding: 12px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 14px; }
+    .diagnostic-text { max-height: 45vh; overflow: auto; overflow-wrap: anywhere; }
+    .loading { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+    .spinner { width: 13px; height: 13px; border: 2px solid #d8deeb; border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1120px) {
+      .shell { grid-template-columns: 210px minmax(0,1fr); }
+      aside { padding: 20px 12px; }
+      .workspace-layout { grid-template-columns: minmax(0,1fr); }
+      .chat-panel { height: 620px; }
+      .meeting-list { max-height: 520px; }
+      .calendar-page-layout { grid-template-columns: minmax(0,1fr); }
+    }
+    @media (max-width: 700px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { padding: 12px 14px; }
+      .brand { padding: 0 4px 10px; }
+      aside > .nav-label, aside > .side-bottom { display: none; }
+      aside > .nav-item { display: flex; width: max-content; padding: 8px 10px; }
+      .meeting-nav { display: flex; gap: 5px; overflow-x: auto; margin: 8px 0 0; padding-bottom: 3px; }
+      .meeting-nav button { white-space: nowrap; width: auto; }
+      main { padding: 22px 16px 32px; }
+      .topbar { align-items: center; margin-bottom: 18px; }
+      .model-chip { display: none; }
+      .workspace-layout { grid-template-columns: 1fr; }
+      .chat-panel { min-height: 500px; height: 64vh; }
+      .chat-log { min-height: 250px; padding: 16px; }
+      .meeting-list { max-height: 55vh; }
+      .chat-message { max-width: 94%; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .employee-request-list { padding: 5px 14px 14px; }
+    }
+    /* User profile switcher & role tags */
+    .user-profile-badge { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #1c273e; border: 1px solid #2e3a54; border-radius: 10px; margin: 4px 0 14px; font-size: 11px; color: #ccd6e6; }
+    .user-profile-badge .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #435cf5, #6879ff); display: grid; place-items: center; font-weight: 700; color: white; font-size: 11px; flex-shrink: 0; }
+    .user-profile-badge .user-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .user-profile-badge .user-name { font-weight: 650; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+    .user-profile-badge .user-role { font-size: 9px; color: #8d9bb0; text-transform: uppercase; letter-spacing: .06em; }
+    .user-switch-btn { border: 0; background: #2b3852; color: #bac6da; border-radius: 6px; padding: 5px 8px; font-size: 10px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .user-switch-btn:hover { background: #374768; color: white; }
+
+    /* Live Feed */
+    .live-feed-panel { margin-top: 18px; }
+    .live-pulse { width: 8px; height: 8px; border-radius: 50%; background: #16a785; display: inline-block; box-shadow: 0 0 0 0 rgba(22, 167, 133, 0.7); animation: pulse 2s infinite; margin-right: 6px; vertical-align: middle; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(22, 167, 133, 0.7); } 70% { box-shadow: 0 0 0 7px rgba(22, 167, 133, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 167, 133, 0); } }
+    .feed-list { max-height: 280px; overflow-y: auto; padding: 10px 18px; }
+    .feed-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .feed-item:last-child { border-bottom: 0; }
+    .feed-actor-tag { display: inline-block; font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; background: #edf1fa; color: #374660; white-space: nowrap; }
+    .feed-actor-tag.priya { background: #eef1ff; color: #334ce6; }
+    .feed-actor-tag.arjun { background: #f0fbf8; color: #0f8569; }
+    .feed-actor-tag.meera { background: #fff5e6; color: #9c6307; }
+    .feed-actor-tag.company, .feed-actor-tag.company_agent { background: #25314a; color: white; }
+    .feed-msg { flex: 1; line-height: 1.5; color: var(--ink); }
+    .feed-time { font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+    /* Pending Decisions - Conflict Flow */
+    .decision-card { background: white; border: 1px solid #fed7aa; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 14px #ea580c0d; }
+    .decision-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+    .decision-title { font-size: 14px; font-weight: 700; color: #1e293b; }
+    .decision-badge { font-size: 10px; font-weight: 700; background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; padding: 3px 8px; border-radius: 999px; }
+    .decision-conflict-box { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 10px 12px; border-radius: 4px; font-size: 12px; color: #92400e; margin: 10px 0 14px; line-height: 1.5; }
+    .decision-actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .decision-btn { border: 0; border-radius: 8px; font-weight: 650; padding: 9px 12px; font-size: 11px; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .decision-btn.approve { background: #16a785; color: white; }
+    .decision-btn.approve:hover { background: #12876b; transform: translateY(-1px); }
+    .decision-btn.decline { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .decision-btn.decline:hover { background: #ffe4e6; transform: translateY(-1px); }
+    .decision-btn.suggest { background: #f0f3ff; color: #435cf5; border: 1px solid #dbe2fe; }
+    .decision-btn.suggest:hover { background: #e0e7ff; transform: translateY(-1px); }
+    .decision-expandable { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+    .decision-expandable label { font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; display: block; }
+    .decision-note-box { margin-bottom: 8px; }
+    .decision-note-box input { font-size: 11px; padding: 8px 10px; }
+
+    /* Account Switcher modal */
+    .account-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .account-card-btn { border: 1px solid var(--line); border-radius: 10px; background: white; padding: 12px; text-align: left; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 10px; }
+    .account-card-btn:hover { border-color: #8da0ff; background: #f7f9ff; transform: translateY(-1px); }
+    .account-card-btn .account-avatar { width: 34px; height: 34px; border-radius: 50%; background: #435cf5; color: white; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+    .account-card-btn.organizer .account-avatar { background: #1e293b; }
+    .account-card-btn.priya .account-avatar { background: #4f46e5; }
+    .account-card-btn.arjun .account-avatar { background: #059669; }
+    .account-card-btn.meera .account-avatar { background: #d97706; }
+
+    /* Agent Registry styles */
+    .registry-page { display: none; }
+    .registry-page.active { display: block; }
+    .registry-table-wrap { overflow-x: auto; padding: 0 4px; }
+    .registry-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .registry-table th { text-align: left; padding: 12px 14px; background: #f8fafc; color: #64748b; font-weight: 650; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); }
+    .registry-table td { padding: 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .registry-table tr:last-child td { border-bottom: 0; }
+    .registry-table tr:hover td { background: #fafcff; }
+    .agent-row-identity { display: flex; align-items: center; gap: 12px; }
+    .agent-reg-avatar { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: white; font-weight: 700; font-size: 13px; background: linear-gradient(135deg, #435cf5, #6d28d9); flex-shrink: 0; }
+    .agent-reg-name { font-weight: 680; color: var(--ink); font-size: 13px; }
+    .agent-reg-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; color: var(--muted); }
+    .agent-endpoint-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; background: #f1f4f9; padding: 4px 8px; border-radius: 6px; color: #334155; display: inline-flex; align-items: center; gap: 6px; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .status-pill.online { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .status-pill.offline { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-pill.online .dot { background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+    .status-pill.offline .dot { background: #f43f5e; }
+    .role-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; background: #eef2ff; color: #4338ca; }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px; }
+    .skill-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; }
+    .reg-actions { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand"><div class="brand-mark">g</div><span class="brand-name">gather</span></div>
+      <div class="user-profile-badge" id="user-profile-badge">
+        <div class="user-avatar" id="current-user-avatar">O</div>
+        <div class="user-meta">
+          <div class="user-name" id="current-user-name">Organizer</div>
+          <div class="user-role" id="current-user-role">Company Admin</div>
+        </div>
+        <button type="button" class="user-switch-btn" id="open-auth-btn">Switch</button>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <a class="nav-item" data-page-link="overview" href="/"><span class="nav-icon">▦</span><span class="nav-text">Overview</span></a>
+      <a class="nav-item" data-page-link="calendars" href="/calendars"><span class="nav-icon">◷</span><span class="nav-text">Employee calendars</span></a>
+      <a class="nav-item" data-page-link="registry" href="/registry"><span class="nav-icon">❖</span><span class="nav-text">Agent Registry</span></a>
+      <div class="calendar-nav" id="calendar-nav"></div>
+      <div class="nav-label">Meetings</div>
+      <div class="meeting-nav" id="meeting-nav"></div>
+      <div class="side-bottom">
+        <strong>A2A scheduler demo</strong><br>
+        Company coordination, with each employee agent managing its own calendar.
+      </div>
+    </aside>
+    <main>
+      <div class="topbar" id="overview-topbar">
+        <div>
+          <div class="eyebrow">Workspace / Overview</div>
+          <h1>Company meeting assistant</h1>
+        </div>
+        <div class="top-actions">
+          <span class="model-chip"><span class="dot"></span><span id="model-name">Loading model…</span></span>
+        </div>
+      </div>
+      <div class="topbar" id="calendar-topbar" style="display:none">
+        <div>
+          <div class="eyebrow" id="calendar-eyebrow">Workspace / Employee calendars</div>
+          <h1 id="calendar-page-title">Employee calendars</h1>
+        </div>
+        <div class="top-actions">
+          <span class="model-chip"><span class="dot"></span><span id="calendar-model-name">Loading model…</span></span>
+        </div>
+      </div>
+      <div class="topbar" id="registry-topbar" style="display:none">
+        <div>
+          <div class="eyebrow">Workspace / Agent Registry</div>
+          <h1>A2A Agent Registry</h1>
+        </div>
+        <div class="top-actions">
+          <button type="button" class="button" id="open-register-dialog-btn">+ Register Agent</button>
+        </div>
+      </div>
+      <div class="error-banner" id="error-banner"></div>
+      <div id="overview-page">
+      <section class="workspace-layout">
+        <section class="panel chat-panel">
+          <div class="panel-head">
+            <div><h2>Chat with the company agent</h2><div class="subhead">Describe the meeting, time, attendees, and location in your own words.</div></div>
+            <button type="button" class="small-btn" id="clear-chat-btn" title="Clear chat messages">Clear chat</button>
+          </div>
+          <div class="chat-log" id="chat-log" aria-live="polite"></div>
+          <form class="chat-compose" id="chat-form">
+            <textarea id="chat-input" required placeholder="For example: Schedule a sprint review tomorrow at 2 PM in Zoom with Priya and Meera."></textarea>
+            <button class="button" id="chat-send" type="submit">Send</button>
+          </form>
+          <div class="chat-hint">The agent will ask if a date or time is unclear, and surface calendar conflicts before deciding.</div>
+        </section>
+        <div>
+          <section class="panel">
+            <div class="panel-head"><div><h2 id="meetings-heading">All meetings</h2><div class="subhead" id="meetings-subhead">Company schedule · select a sidebar filter</div></div><span class="status-chip" id="meeting-count">0 total</span></div>
+            <div class="meeting-list" id="meeting-list"><div class="empty"><span class="loading"><span class="spinner"></span> Loading meetings…</span></div></div>
+          </section>
+          <section class="panel agent-status">
+            <div class="panel-head"><div><h2>Employee agents</h2><div class="subhead" id="agent-note">Checking status</div></div><span class="status-chip" id="agent-count">—</span></div>
+            <div class="people-list" id="employee-list"></div>
+          </section>
+          <section class="panel live-feed-panel" id="live-feed-panel">
+            <div class="panel-head">
+              <div>
+                <h2><span class="live-pulse"></span> Live Company Feed</h2>
+                <div class="subhead">Real-time agent events, conflicts & decisions</div>
+              </div>
+              <span class="status-chip" id="feed-status-chip">Live</span>
+            </div>
+            <div class="feed-list" id="feed-list"><div class="empty">No events yet. Actions taken by agents will stream here.</div></div>
+          </section>
+        </div>
+      </section>
+      </div>
+      <section class="calendar-page" id="calendar-page">
+        <div class="calendar-page-layout">
+          <section class="panel">
+            <div class="panel-head"><div><h2>Employees</h2><div class="subhead">Choose a calendar to view</div></div></div>
+            <div class="calendar-employee-nav" id="calendar-employee-nav"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2 id="selected-calendar-name">Employee calendar</h2><div class="subhead" id="selected-calendar-subhead">Calendar events</div></div></div>
+            <div class="calendar-events" id="selected-calendar-events"><div class="empty">Choose an employee to view their calendar.</div></div>
+            <section class="employee-requests" id="employee-requests-panel" style="display:none">
+              <div class="panel-head"><div><h2>Needs your response</h2><div class="subhead">Questions from your calendar agent</div></div></div>
+              <div class="employee-request-list" id="employee-request-list"></div>
+            </section>
+          </section>
+        </div>
+      </section>
+      <section class="registry-page" id="registry-page">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Registered Autonomous Agents</h2>
+              <div class="subhead">Agents registered dynamically in the A2A registry for meeting coordination and calendar tools.</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="status-chip" id="registry-count">3 registered</span>
+              <button type="button" class="small-btn" id="refresh-registry-btn">↻ Refresh</button>
+            </div>
+          </div>
+          <div id="registry-agents-list" class="registry-table-wrap">
+            <div class="empty"><span class="loading"><span class="spinner"></span> Loading registered agents…</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <dialog id="action-dialog">
+    <div class="dialog-head"><div><h2 id="action-title">Meeting action</h2><div class="subhead" id="action-subtitle"></div></div><button class="close" id="action-close">×</button></div>
+    <div class="dialog-content" id="action-content"></div>
+  </dialog>
+
+  <dialog id="move-dialog">
+    <div class="dialog-head"><div><h2>Reschedule meeting</h2><div class="subhead" id="move-subtitle"></div></div><button class="close" id="move-close">×</button></div>
+    <form class="dialog-content" id="move-form">
+      <input type="hidden" id="move-meeting-id">
+      <div class="form-grid">
+        <div class="field"><label for="move-start">New start</label><input id="move-start" type="datetime-local" required></div>
+        <div class="field"><label for="move-end">New end</label><input id="move-end" type="datetime-local" required></div>
+      </div>
+      <div class="subhead">Invitee agents check for conflicts before any calendar changes. You’ll be asked before proceeding if a conflict is found.</div>
+      <div class="dialog-actions"><button type="button" class="button secondary" data-close="move-dialog">Cancel</button><button class="button" type="submit">Check and move</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <div class="dialog-head"><div><h2>Calendar conflict</h2><div class="subhead">An employee agent needs your decision.</div></div></div>
+    <div class="dialog-content">
+      <div class="prompt-text" id="confirm-message"></div>
+      <div class="dialog-actions"><button class="button secondary" id="confirm-no">Keep existing time</button><button class="button" id="confirm-yes">Proceed anyway</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="register-agent-dialog">
+    <div class="dialog-head">
+      <div>
+        <h2>Register New Agent</h2>
+        <div class="subhead">Add an autonomous calendar agent to the company registry.</div>
+      </div>
+      <button class="close" id="register-dialog-close">×</button>
+    </div>
+    <form class="dialog-content" id="register-agent-form">
+      <div class="form-grid">
+        <div class="field">
+          <label for="reg-agent-id">Agent ID (lowercase slug)</label>
+          <input id="reg-agent-id" required placeholder="e.g. rahul">
+        </div>
+        <div class="field">
+          <label for="reg-agent-name">Display Name</label>
+          <input id="reg-agent-name" required placeholder="e.g. Rahul Verma">
+        </div>
+        <div class="field full">
+          <label for="reg-agent-url">A2A Endpoint URL (optional)</label>
+          <input id="reg-agent-url" placeholder="Auto-assign next port (e.g. http://127.0.0.1:9105)" type="url">
+          <span style="font-size:10px;color:var(--muted);margin-top:3px;display:block;">Leave blank to auto-assign a port, create its calendar, and auto-start the agent.</span>
+        </div>
+        <div class="field">
+          <label for="reg-agent-role">Role</label>
+          <select id="reg-agent-role">
+            <option value="employee" selected>Employee Calendar Agent</option>
+            <option value="service">Service Agent</option>
+            <option value="coordinator">Coordinator</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="reg-agent-dept">Department</label>
+          <input id="reg-agent-dept" placeholder="e.g. Operations">
+        </div>
+        <div class="field full">
+          <label for="reg-agent-skills">Skills (comma-separated)</label>
+          <input id="reg-agent-skills" value="calendar, meetings, book_meeting">
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="button secondary" id="register-agent-cancel">Cancel</button>
+        <button type="submit" class="button">Register Agent</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="auth-dialog">
+    <div class="dialog-head">
+      <div>
+        <h2>Switch Profile / Account</h2>
+        <div class="subhead">Login as an employee or meeting organizer</div>
+      </div>
+      <button class="close" id="auth-close">×</button>
+    </div>
+    <div class="dialog-content">
+      <div class="subhead" style="margin-bottom:10px">One-click profile switch (employee sees only their data):</div>
+      <div class="account-grid">
+        <button type="button" class="account-card-btn organizer" data-login-user="organizer">
+          <div class="account-avatar">O</div>
+          <div>
+            <div style="font-weight:700">Organizer</div>
+            <div style="font-size:10px;color:var(--muted)">Full Company View</div>
+          </div>
+        </button>
+        <button type="button" class="account-card-btn priya" data-login-user="priya">
+          <div class="account-avatar">P</div>
+          <div>
+            <div style="font-weight:700">Priya Sharma</div>
+            <div style="font-size:10px;color:var(--muted)">Employee Dashboard</div>
+          </div>
+        </button>
+        <button type="button" class="account-card-btn arjun" data-login-user="arjun">
+          <div class="account-avatar">A</div>
+          <div>
+            <div style="font-weight:700">Arjun Mehta</div>
+            <div style="font-size:10px;color:var(--muted)">Employee Dashboard</div>
+          </div>
+        </button>
+        <button type="button" class="account-card-btn meera" data-login-user="meera">
+          <div class="account-avatar">M</div>
+          <div>
+            <div style="font-weight:700">Meera Iyer</div>
+            <div style="font-size:10px;color:var(--muted)">Employee Dashboard</div>
+          </div>
+        </button>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+        <form id="custom-login-form">
+          <div class="form-grid">
+            <div class="field"><label for="auth-username">Username</label><input id="auth-username" required placeholder="organizer, priya, arjun, meera"></div>
+            <div class="field"><label for="auth-password">Password</label><input id="auth-password" type="password" required placeholder="admin123, priya123, etc."></div>
+          </div>
+          <div class="dialog-actions"><button type="submit" class="button">Log In</button></div>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    const state = { meetings: [], employees: [], calendars: {}, calendarErrors: {}, employeeRequests: [], backend: "fake" };
+    const employeeLabels = { priya: "Priya Sharma", arjun: "Arjun Mehta", meera: "Meera Iyer" };
+    const isCalendarPage = location.pathname === "/calendars";
+    const isRegistryPage = location.pathname === "/registry";
+    const profileMatch = location.pathname.match(/^\/employees\/([^/]+)$/i);
+    const isEmployeeProfile = Boolean(profileMatch);
+    const isEmployeeView = isCalendarPage || isEmployeeProfile;
+    let selectedEmployee = profileMatch
+      ? decodeURIComponent(profileMatch[1]).toLowerCase()
+      : new URLSearchParams(location.search).get("employee");
+    let selectedMeetingFilter = "all";
+    // Ephemeral chat session: do not retain previous chat messages across reloads
+    let chatConversationId = null;
+    let chatMessages = [];
+    try {
+      localStorage.removeItem("gather-chat-messages");
+      localStorage.removeItem("gather-chat-id");
+    } catch (e) {}
+
+    const $ = (selector) => document.querySelector(selector);
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[char]));
+    const prettyDate = (value) => {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat(undefined, {
+        weekday: "short", month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit"
+      }).format(date);
+    };
+    const toast = (message) => {
+      const node = $("#toast");
+      node.textContent = message;
+      node.classList.add("show");
+      setTimeout(() => node.classList.remove("show"), 2800);
+    };
+    function renderChat() {
+      const log = $("#chat-log");
+      log.replaceChildren();
+      if (!chatMessages.length) {
+        const welcome = document.createElement("div");
+        welcome.className = "chat-message assistant";
+        welcome.textContent = "Hi! Tell me what meeting to schedule, when it should happen, who to invite, and where. You can also ask me to change or cancel an existing meeting.";
+        log.append(welcome);
+      }
+      for (const message of chatMessages) {
+        const bubble = document.createElement("div");
+        bubble.className = `chat-message ${message.role}${message.pending ? " pending" : ""}`;
+        bubble.textContent = message.text;
+        log.append(bubble);
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+    function saveChat() {
+      // Ephemeral chat session: previous messages are not retained in localStorage
+    }
+    function getApiBaseUrl() {
+      if (location.protocol === "file:" || location.port === "5500" || location.port === "3000") {
+        return "http://127.0.0.1:8080";
+      }
+      return "";
+    }
+    async function request(url, options = {}) {
+      let response;
+      const targetUrl = url.startsWith("http") ? url : `${getApiBaseUrl()}${url}`;
+      try {
+        const token = localStorage.getItem("gather-token");
+        const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        response = await fetch(targetUrl, {
+          ...options,
+          headers
+        });
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw new Error(
+            "Cannot reach the Gather dashboard server. Start or restart the server for this page, then retry. " +
+            "No response was received; check the meeting state before resubmitting."
+          );
+        }
+        throw error;
+      }
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
+      return body;
+    }
+    let currentUser = null;
+    function renderUserBadge() {
+      const avatar = $("#current-user-avatar");
+      const name = $("#current-user-name");
+      const role = $("#current-user-role");
+      if (currentUser) {
+        avatar.textContent = (currentUser.username || "U")[0].toUpperCase();
+        name.textContent = currentUser.name || currentUser.username;
+        role.textContent = currentUser.role === "employee" ? "Employee Dashboard" : "Organizer";
+      } else {
+        avatar.textContent = "O";
+        name.textContent = "Organizer";
+        role.textContent = "Company Admin";
+      }
+      const isAdmin = !currentUser || currentUser.role === "organizer" || currentUser.role === "admin";
+      const openRegBtn = $("#open-register-dialog-btn");
+      if (openRegBtn) {
+        openRegBtn.style.display = isAdmin ? "inline-flex" : "none";
+      }
+    }
+    async function checkAuth() {
+      try {
+        const res = await request("/api/auth/me");
+        if (res.authenticated && res.user) {
+          currentUser = res.user;
+        } else {
+          currentUser = null;
+        }
+      } catch (e) {
+        currentUser = null;
+      }
+      renderUserBadge();
+    }
+    function prettyTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat(undefined, {
+        hour: "numeric", minute: "2-digit", second: "2-digit"
+      }).format(date);
+    }
+    async function renderFeed() {
+      const list = $("#feed-list");
+      if (!list) return;
+      try {
+        const data = await request("/api/feed?limit=30");
+        const feed = data.feed || [];
+        if (!feed.length) {
+          list.innerHTML = '<div class="empty">No events yet. Actions taken by agents will stream here.</div>';
+          return;
+        }
+        list.innerHTML = feed.map((item) => `
+          <div class="feed-item">
+            <span class="feed-actor-tag ${esc(item.actor)}">${esc(item.actor)}</span>
+            <div class="feed-msg">${esc(item.event)}</div>
+            <div class="feed-time">${esc(prettyTime(item.timestamp))}</div>
+          </div>
+        `).join("");
+      } catch (err) {
+        // silent on feed poll failure
+      }
+    }
+    function meetingRoster(meeting) {
+      return new Set([
+        ...(meeting.invitees || []),
+        ...(meeting.pending_invitees || []),
+        ...(meeting.declined_invitees || []),
+        ...(meeting.requested_invitees || [])
+      ]);
+    }
+    function renderMeetingNav() {
+      const counts = Object.fromEntries(
+        state.employees.map((employee) => [
+          employee.id,
+          state.meetings.filter((meeting) => meetingRoster(meeting).has(employee.id)).length
+        ])
+      );
+      $("#meeting-nav").innerHTML = `
+        <button type="button" data-meeting-filter="all" class="${selectedMeetingFilter === "all" ? "active" : ""}">
+          <span>All meetings</span><span class="meeting-nav-count">${state.meetings.length}</span>
+        </button>
+        ${state.employees.map((employee) => `
+          <button type="button" data-meeting-filter="${esc(employee.id)}" class="${selectedMeetingFilter === employee.id ? "active" : ""}">
+            <span>${esc(employeeLabels[employee.id] || employee.name)}</span><span class="meeting-nav-count">${counts[employee.id]}</span>
+          </button>`).join("")}`;
+    }
+    function renderMeetings() {
+      const visibleMeetings = selectedMeetingFilter === "all"
+        ? state.meetings
+        : state.meetings.filter((meeting) => meetingRoster(meeting).has(selectedMeetingFilter));
+      $("#meeting-count").textContent = `${state.meetings.length} total`;
+      $("#meetings-heading").textContent = selectedMeetingFilter === "all"
+        ? "All meetings"
+        : `${employeeLabels[selectedMeetingFilter] || selectedMeetingFilter}'s meetings`;
+      $("#meetings-subhead").textContent = selectedMeetingFilter === "all"
+        ? `${visibleMeetings.length} company meeting${visibleMeetings.length === 1 ? "" : "s"}`
+        : `${visibleMeetings.length} meeting${visibleMeetings.length === 1 ? "" : "s"} for this employee`;
+      const list = $("#meeting-list");
+      if (!visibleMeetings.length) {
+        list.innerHTML = `<div class="empty">${selectedMeetingFilter === "all" ? "No meetings yet. Ask the company agent to schedule one in chat." : "No meetings for this employee."}</div>`;
+        return;
+      }
+      list.innerHTML = visibleMeetings.map((meeting) => `
+        <article class="meeting">
+          <div class="meeting-main">
+            <div>
+              <div class="meeting-title">${esc(meeting.title)}</div>
+              <div class="meeting-meta">${esc(prettyDate(meeting.start))} – ${esc(prettyDate(meeting.end))}
+                ${meeting.location ? `<br>${esc(meeting.location)}` : ""}</div>
+            </div>
+            <span class="meeting-id">${esc(meeting.id)}</span>
+          </div>
+          <div class="attendees">${[
+            ...(meeting.invitees || []).map((person) =>
+              `<span class="person">${esc(employeeLabels[person] || person)}</span>`),
+            ...(meeting.pending_invitees || []).map((person) =>
+              `<span class="person pending">${esc(employeeLabels[person] || person)} · awaiting response</span>`),
+            ...(meeting.declined_invitees || []).map((person) =>
+              `<span class="person declined">${esc(employeeLabels[person] || person)} · declined</span>`)
+          ].join("") || '<span class="person">No confirmed invitees</span>'}</div>
+          <div class="meeting-actions">
+            <button class="small-btn" data-action="move" data-id="${esc(meeting.id)}">Reschedule</button>
+            <button class="small-btn" data-action="add" data-id="${esc(meeting.id)}">＋ Add person</button>
+            <button class="small-btn remove" data-action="remove" data-id="${esc(meeting.id)}">Remove people</button>
+            <button class="small-btn remove" data-action="remove-meeting" data-id="${esc(meeting.id)}">Remove meeting</button>
+          </div>
+        </article>`).join("");
+    }
+    function renderEmployees() {
+      const online = state.employees.filter((person) => person.status === "online").length;
+      $("#agent-count").textContent = `${online}/${state.employees.length}`;
+      $("#agent-note").textContent = online === state.employees.length
+        ? "All agents available"
+        : `${state.employees.length - online} agent${state.employees.length - online === 1 ? "" : "s"} offline`;
+      $("#employee-list").innerHTML = state.employees.map((person) => `
+        <span class="agent-chip ${person.status === "online" ? "" : "offline"}">
+          <span class="dot" style="background:${person.status === "online" ? "#16a785" : "#d34d5b"}"></span>
+          ${esc(employeeLabels[person.id] || person.name)} · ${esc(person.status)}
+        </span>`).join("");
+    }
+    function renderCalendars() {
+      const names = state.employees.map((person) => person.id);
+      if (!names.includes(selectedEmployee)) selectedEmployee = names[0] || null;
+      const employeeLinks = names.map((name) => `
+        <button type="button" data-employee="${esc(name)}" class="${name === selectedEmployee ? "active" : ""}">
+          <span>${esc(employeeLabels[name] || name)}</span>
+          <span class="calendar-count">${state.calendarErrors[name] ? "Offline" : (state.calendars[name] || []).length}</span>
+        </button>`).join("");
+      $("#calendar-nav").innerHTML = names.map((name) => `
+        <a href="/employees/${encodeURIComponent(name)}">
+          ${esc(employeeLabels[name] || name)} profile
+          ${state.employeeRequests.some((item) => item.employee === name) ? "· response needed" : ""}
+        </a>
+      `).join("");
+      $("#calendar-nav").classList.add("visible");
+      $("#calendar-employee-nav").innerHTML = employeeLinks;
+
+      if (!isEmployeeView) return;
+
+      $("#calendar-employee-nav").querySelectorAll("[data-employee]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.employee === selectedEmployee);
+      });
+      const employee = state.employees.find((person) => person.id === selectedEmployee);
+      $("#calendar-eyebrow").textContent = isEmployeeProfile
+        ? `Employee profile / ${employeeLabels[selectedEmployee] || selectedEmployee}`
+        : "Workspace / Employee calendars";
+      $("#calendar-page-title").textContent = isEmployeeProfile
+        ? `${employeeLabels[selectedEmployee] || selectedEmployee}'s profile`
+        : "Employee calendars";
+      $("#selected-calendar-name").textContent = employee
+        ? employeeLabels[selectedEmployee] || employee.name
+        : "Employee calendar";
+      $("#selected-calendar-subhead").textContent = employee
+        ? `Calendar for ${employee.name} · ${employee.status} agent`
+        : "No employee calendars available";
+      const events = state.calendars[selectedEmployee] || [];
+      const calendarError = state.calendarErrors[selectedEmployee];
+      $("#selected-calendar-events").innerHTML = calendarError
+        ? `<div class="empty offline">Google Calendar is offline or unavailable.<br>${esc(calendarError)}</div>`
+        : events.length
+        ? events.map((event) => `<div class="event-line">
+            <div class="event-title">${esc(event.title)}</div>
+            <div class="event-time">${esc(prettyDate(event.start))} – ${esc(prettyDate(event.end))}${event.location ? ` · ${esc(event.location)}` : ""}</div>
+          </div>`).join("")
+        : '<div class="empty">No events currently stored on this calendar.</div>';
+      const requestPanel = $("#employee-requests-panel");
+      requestPanel.style.display = isEmployeeProfile ? "block" : "none";
+      if (isEmployeeProfile) {
+        const requests = state.employeeRequests.filter(
+          (item) => item.employee === selectedEmployee
+        );
+        const listNode = $("#employee-request-list");
+        const activeEl = document.activeElement;
+        const isUserEditing = listNode && listNode.contains(activeEl);
+
+        const newKey = requests.map((item) => `${item.meeting_id}:${item.employee}:${item.prompt}`).join("||");
+        if (listNode.dataset.renderedKey === newKey && isUserEditing) {
+          // User is actively editing an input inside this panel, do not wipe DOM!
+          return;
+        }
+
+        // Save existing input states if user typed anything
+        const savedSuggestDisplay = {};
+        const savedSuggestValues = {};
+        const savedNotes = {};
+        const savedAnswers = {};
+        listNode.querySelectorAll(".employee-request").forEach((f) => {
+          const mid = f.dataset.meetingId;
+          const sPanel = f.querySelector(".suggest-panel");
+          if (sPanel) savedSuggestDisplay[mid] = sPanel.style.display;
+          const sInput = f.querySelector(".suggest-time-input");
+          if (sInput && sInput.value) savedSuggestValues[mid] = sInput.value;
+          const nInput = f.querySelector(".decision-note-input");
+          if (nInput && nInput.value) savedNotes[mid] = nInput.value;
+          const aText = f.querySelector('textarea[name="message"]');
+          if (aText && aText.value) savedAnswers[mid] = aText.value;
+        });
+
+        listNode.dataset.renderedKey = newKey;
+        listNode.innerHTML = requests.length
+          ? requests.map((item) => {
+              const mid = item.meeting_id;
+              const isSuggestOpen = savedSuggestDisplay[mid] === "block";
+              const suggestVal = esc(savedSuggestValues[mid] || "");
+              const noteVal = esc(savedNotes[mid] || "");
+              const ansVal = esc(savedAnswers[mid] || "");
+              return `
+            <div class="decision-card">
+              <form class="employee-request" data-meeting-id="${esc(mid)}" data-employee="${esc(item.employee)}">
+                <div class="decision-header">
+                  <div>
+                    <div class="decision-title">${esc(item.meeting_title)}</div>
+                    <div class="employee-request-meta" style="font-size:11px;color:var(--muted)">${esc(prettyDate(item.start))} – ${esc(prettyDate(item.end))}</div>
+                  </div>
+                  <span class="decision-badge">Conflict Detected</span>
+                </div>
+                <div class="decision-conflict-box">
+                  <strong>Conflict Question:</strong> ${esc(item.prompt)}
+                </div>
+
+                <div class="decision-actions-grid">
+                  <button type="button" class="decision-btn approve" data-decision-action="approve">
+                    ✓ Approve reschedule
+                  </button>
+                  <button type="button" class="decision-btn decline" data-decision-action="decline">
+                    ✕ Decline (can't reschedule)
+                  </button>
+                  <button type="button" class="decision-btn suggest" data-decision-action="suggest">
+                    ⏱ Suggest another time
+                  </button>
+                </div>
+
+                <div class="decision-expandable suggest-panel" style="display:${isSuggestOpen ? "block" : "none"}">
+                  <label for="suggest-input-${esc(mid)}">Propose alternative time or slot:</label>
+                  <div style="display:flex;gap:6px;margin-top:4px;">
+                    <input type="text" id="suggest-input-${esc(mid)}" class="suggest-time-input" value="${suggestVal}" placeholder="e.g. Tomorrow at 3:00 PM or Friday morning" style="flex:1;">
+                    <button type="button" class="decision-btn suggest" data-decision-action="submit-suggest" style="white-space:nowrap;">Send time</button>
+                  </div>
+                </div>
+
+                <div class="decision-note-box">
+                  <input type="text" class="decision-note-input" value="${noteVal}" placeholder="Optional note for your agent...">
+                </div>
+
+                <div class="field" style="margin-top:10px;">
+                  <label for="employee-answer-${esc(mid)}" style="display:flex;justify-content:space-between">
+                    <span>Your decision / response</span>
+                    <span style="font-size:11px;color:var(--muted)">or click an action button above</span>
+                  </label>
+                  <textarea id="employee-answer-${esc(mid)}" name="message" required placeholder="Tell your calendar agent what you want to do.">${ansVal}</textarea>
+                </div>
+                <button class="button" type="submit">Send to my calendar agent</button>
+              </form>
+            </div>`;
+            }).join("")
+          : '<div class="empty">You have no unanswered calendar questions.</div>';
+
+        if (activeEl && activeEl.id) {
+          const newActive = document.getElementById(activeEl.id);
+          if (newActive) newActive.focus();
+        }
+      }
+    }
+    function setupPage() {
+      const activeTab = isRegistryPage ? "registry" : (isEmployeeView ? "calendars" : "overview");
+      document.querySelectorAll("[data-page-link]").forEach((link) => {
+        link.classList.toggle("active", link.dataset.pageLink === activeTab);
+      });
+      $("#overview-topbar").style.display = (!isEmployeeView && !isRegistryPage) ? "flex" : "none";
+      $("#calendar-topbar").style.display = isEmployeeView ? "flex" : "none";
+      $("#registry-topbar").style.display = isRegistryPage ? "flex" : "none";
+      $("#overview-page").style.display = (!isEmployeeView && !isRegistryPage) ? "block" : "none";
+      $("#calendar-page").classList.toggle("active", Boolean(isEmployeeView));
+      $("#registry-page").classList.toggle("active", Boolean(isRegistryPage));
+      $("#meeting-nav").style.display = (!isEmployeeView && !isRegistryPage) ? "" : "none";
+      if (isRegistryPage) {
+        document.title = "Gather — A2A Agent Registry";
+        renderRegistry();
+      } else if (isEmployeeView) {
+        document.title = isEmployeeProfile
+          ? `Gather — ${employeeLabels[selectedEmployee] || selectedEmployee}'s profile`
+          : "Gather — Employee calendars";
+      } else {
+        document.title = "Gather — Company meeting assistant";
+      }
+    }
+    async function renderRegistry() {
+      const container = $("#registry-agents-list");
+      if (!container) return;
+      try {
+        const res = await request("/api/registry/agents");
+        const agents = res.agents || [];
+        $("#registry-count").textContent = `${agents.length} registered`;
+        if (!agents.length) {
+          container.innerHTML = '<div class="empty">No agents registered yet. Click "+ Register Agent" to register an agent.</div>';
+          return;
+        }
+        const isAdmin = !currentUser || currentUser.role === "organizer" || currentUser.role === "admin";
+        const html = `
+          <table class="registry-table">
+            <thead>
+              <tr>
+                <th>Agent Identity</th>
+                <th>Role</th>
+                <th>A2A Endpoint</th>
+                <th>Status</th>
+                <th>Skills</th>
+                <th>Registered</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${agents.map(a => {
+                const avatarInitial = (a.name || a.id || "A")[0].toUpperCase();
+                const isOnline = a.status === "online";
+                const skills = (a.skills || []).map(s => `<span class="skill-tag">${esc(s)}</span>`).join("");
+                return `
+                  <tr data-agent-row="${esc(a.id)}">
+                    <td>
+                      <div class="agent-row-identity">
+                        <div class="agent-reg-avatar">${avatarInitial}</div>
+                        <div>
+                          <div class="agent-reg-name">${esc(a.name || a.id)}</div>
+                          <div class="agent-reg-id">id: ${esc(a.id)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="role-badge">${esc(a.role || "employee")}</span></td>
+                    <td><span class="agent-endpoint-code">${esc(a.url)}</span></td>
+                    <td>
+                      <span class="status-pill ${isOnline ? "online" : "offline"}" id="status-pill-${esc(a.id)}">
+                        <span class="dot"></span>
+                        <span>${isOnline ? "Online" : "Offline"}</span>
+                      </span>
+                    </td>
+                    <td><div class="skill-tags">${skills || '<span style="color:var(--muted)">None</span>'}</div></td>
+                    <td style="font-size:11px;color:var(--muted)">${esc(prettyDate(a.registered_at))}</td>
+                    <td>
+                      <div class="reg-actions">
+                        <button type="button" class="small-btn" data-ping-agent="${esc(a.id)}" title="Check agent connectivity">Ping</button>
+                        ${isAdmin ? `<button type="button" class="small-btn remove" data-unregister-agent="${esc(a.id)}" title="Unregister agent">Unregister</button>` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        `;
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = `<div class="empty offline">Failed to load registry: ${esc(err.message)}</div>`;
+      }
+    }
+    async function refresh() {
+      try {
+        const result = await request("/api/state");
+        state.meetings = result.meetings;
+        state.employees = result.employees;
+        (state.employees || []).forEach((emp) => {
+          employeeLabels[emp.id] = emp.name;
+        });
+        state.calendars = result.calendars;
+        state.calendarErrors = result.calendar_errors || {};
+        state.employeeRequests = result.employee_requests || [];
+        state.backend = result.calendar_backend;
+        if (result.user) {
+          currentUser = result.user;
+          renderUserBadge();
+        }
+        $("#model-name").textContent = result.model;
+        $("#calendar-model-name").textContent = result.model;
+        $("#error-banner").style.display = "none";
+        renderMeetingNav();
+        renderMeetings();
+        renderEmployees();
+        renderCalendars();
+        renderFeed();
+        if (isRegistryPage) renderRegistry();
+      } catch (error) {
+        $("#error-banner").textContent = error.message;
+        $("#error-banner").style.display = "block";
+      }
+    }
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("#calendar-employee-nav [data-employee]");
+      if (!button) return;
+      selectedEmployee = button.dataset.employee;
+      if (isEmployeeProfile) {
+        location.href = `/employees/${encodeURIComponent(selectedEmployee)}`;
+        return;
+      }
+      const url = new URL(location.href);
+      url.searchParams.set("employee", selectedEmployee);
+      history.replaceState(null, "", url);
+      renderCalendars();
+    });
+    function openAction(title, subtitle, content) {
+      $("#action-title").textContent = title;
+      $("#action-subtitle").textContent = subtitle;
+      $("#action-content").innerHTML = content;
+      $("#action-dialog").showModal();
+    }
+    $("#action-close").addEventListener("click", () => $("#action-dialog").close());
+    $("#meeting-nav").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-meeting-filter]");
+      if (!button) return;
+      selectedMeetingFilter = button.dataset.meetingFilter;
+      renderMeetingNav();
+      renderMeetings();
+    });
+    $("#chat-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = $("#chat-input");
+      const button = $("#chat-send");
+      const message = input.value.trim();
+      if (!message) return;
+      chatMessages.push({ role: "user", text: message });
+      input.value = "";
+      button.disabled = true;
+      renderChat();
+      saveChat();
+      try {
+        const response = await request("/api/chat", {
+          method: "POST",
+          body: JSON.stringify({
+            conversation_id: chatConversationId,
+            message
+          })
+        });
+        if (response.needs_response) {
+          chatConversationId = response.conversation_id;
+        } else {
+          chatConversationId = null;
+        }
+        chatMessages.push({
+          role: "assistant",
+          text: response.assistant,
+          pending: response.needs_response
+        });
+        input.placeholder = response.needs_response
+          ? "Answer the company agent's question…"
+          : "Tell me what meeting to schedule, when, who to invite, and where…";
+        saveChat();
+        renderChat();
+        await refresh();
+      } catch (error) {
+        chatMessages.push({ role: "assistant", text: `I couldn't complete that request: ${error.message}` });
+        saveChat();
+        renderChat();
+      } finally {
+        button.disabled = false;
+        input.focus();
+      }
+    });
+    const clearChatBtn = $("#clear-chat-btn");
+    if (clearChatBtn) {
+      clearChatBtn.addEventListener("click", () => {
+        chatConversationId = null;
+        chatMessages = [];
+        try {
+          localStorage.removeItem("gather-chat-messages");
+          localStorage.removeItem("gather-chat-id");
+        } catch (e) {}
+        renderChat();
+        toast("Chat cleared");
+      });
+    }
+    $("#chat-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        $("#chat-form").requestSubmit();
+      }
+    });
+    $("#meeting-list").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const meeting = state.meetings.find((item) => item.id === button.dataset.id);
+      if (!meeting) return;
+      if (button.dataset.action === "move") {
+        $("#move-meeting-id").value = meeting.id;
+        $("#move-subtitle").textContent = meeting.title;
+        $("#move-start").value = meeting.start.slice(0, 16);
+        $("#move-end").value = meeting.end.slice(0, 16);
+        $("#move-dialog").showModal();
+      } else if (button.dataset.action === "add") {
+        const alreadyRequested = [
+          ...(meeting.invitees || []),
+          ...(meeting.pending_invitees || [])
+        ];
+        const choices = state.employees.filter((person) => !alreadyRequested.includes(person.id));
+        if (!choices.length) return toast("All employees are already invited.");
+        openAction("Add an attendee", meeting.title, `
+          <div class="field"><label for="add-employee">Employee</label><select id="add-employee">
+            ${choices.map((person) => `<option value="${esc(person.id)}">${esc(person.name)}</option>`).join("")}
+          </select></div>
+          <div class="dialog-actions"><button class="button secondary" data-action-close>Cancel</button><button class="button" id="add-submit">Send A2A invite</button></div>`);
+        $("#action-content").querySelector("[data-action-close]").onclick = () => $("#action-dialog").close();
+        $("#add-submit").onclick = async () => {
+          const button = $("#add-submit"); button.disabled = true;
+          try {
+            const result = await request(`/api/meetings/${encodeURIComponent(meeting.id)}/invitees`, {
+              method: "POST", body: JSON.stringify({ employee: $("#add-employee").value })
+            });
+            $("#action-dialog").close();
+            const employee = $("#add-employee").value;
+            const outcome = result.result || "";
+            const status = result.invite_prompt !== null
+              ? `A question is waiting on ${employeeLabels[employee] || employee}'s profile.`
+              : outcome;
+            if (outcome.includes("did not complete") || outcome.includes("FAILED") || outcome.includes("ERROR")) {
+              openAction("Invite status", `Adding ${employeeLabels[employee] || employee}`, `
+                <div class="prompt-text diagnostic-text">${esc(outcome)}</div>
+                <div class="dialog-actions"><button class="button" data-action-close>Close</button></div>`);
+              $("#action-content").querySelector("[data-action-close]").onclick = () => $("#action-dialog").close();
+            } else {
+              toast(`${employeeLabels[employee] || employee}: ${status}`);
+            }
+            await refresh();
+          } catch (error) {
+            const employee = $("#add-employee") ? $("#add-employee").value : "attendee";
+            openAction("Invite status", `Error adding ${employeeLabels[employee] || employee}`, `
+              <div class="prompt-text diagnostic-text">${esc(error.message || String(error))}</div>
+              <div class="dialog-actions"><button class="button" data-action-close>Close</button></div>`);
+            $("#action-content").querySelector("[data-action-close]").onclick = () => $("#action-dialog").close();
+            button.disabled = false;
+          }
+        };
+      } else if (button.dataset.action === "remove") {
+        const choices = state.employees.filter((person) => meeting.invitees.includes(person.id));
+        if (!choices.length) return toast("This meeting has no invitees.");
+        openAction("Remove people", meeting.title, `
+          <div class="field"><label>Select employees to remove</label><div class="checkboxes">
+            ${choices.map((person) => `<label class="check-person"><input type="checkbox" name="remove-person" value="${esc(person.id)}">${esc(person.name)}</label>`).join("")}
+          </div></div>
+          <div class="dialog-actions"><button class="button secondary" data-action-close>Cancel</button><button class="button danger" id="remove-submit">Remove from meeting</button></div>`);
+        $("#action-content").querySelector("[data-action-close]").onclick = () => $("#action-dialog").close();
+        $("#remove-submit").onclick = async () => {
+          const employees = [...$("#action-content").querySelectorAll('input[name="remove-person"]:checked')].map((input) => input.value);
+          if (!employees.length) return toast("Select at least one employee.");
+          const button = $("#remove-submit"); button.disabled = true;
+          try {
+            const result = await request(`/api/meetings/${encodeURIComponent(meeting.id)}/remove-people`, {
+              method: "POST", body: JSON.stringify({ employees })
+            });
+            $("#action-dialog").close();
+            toast(`Removal: ${result.status}`);
+            await refresh();
+          } catch (error) { toast(error.message); button.disabled = false; }
+        };
+      } else if (button.dataset.action === "remove-meeting") {
+        openAction("Remove this meeting?", meeting.title, `
+          <div class="prompt-text">This will cancel the meeting and ask every invitee's employee agent to remove its event from their calendar over A2A. The meeting will be deleted from the company schedule after all invitee agents confirm. If an agent cannot confirm, the meeting remains for the invitees whose calendars were not updated.</div>
+          <div class="dialog-actions"><button class="button secondary" data-action-close>Keep meeting</button><button class="button danger" id="remove-meeting-submit">Remove meeting</button></div>`);
+        $("#action-content").querySelector("[data-action-close]").onclick = () => $("#action-dialog").close();
+        $("#remove-meeting-submit").onclick = async () => {
+          const actionButton = $("#remove-meeting-submit"); actionButton.disabled = true;
+          try {
+            const result = await request(`/api/meetings/${encodeURIComponent(meeting.id)}/remove`, {
+              method: "POST", body: JSON.stringify({})
+            });
+            $("#action-dialog").close();
+            const statusMessage = result.status === "CANCELLED"
+              ? "Meeting removed; all invitees confirmed calendar removal."
+              : result.status === "PARTIAL"
+                ? `Meeting removal was partial. Remaining invitees: ${(result.remaining_invitees || []).join(", ") || "unknown"}.`
+                : `Meeting was not fully removed: ${result.status || "unknown status"}.`;
+            toast(statusMessage);
+            await refresh();
+          } catch (error) { toast(error.message); actionButton.disabled = false; }
+        };
+      }
+    });
+    $("#employee-request-list").addEventListener("submit", async (event) => {
+      const form = event.target.closest(".employee-request");
+      if (!form) return;
+      event.preventDefault();
+      const button = form.querySelector('button[type="submit"]');
+      const rawMessage = new FormData(form).get("message");
+      const message = typeof rawMessage === "string" ? rawMessage.trim() : "";
+      if (!message) return;
+      button.disabled = true;
+      try {
+        const result = await request(
+          `/api/meetings/${encodeURIComponent(form.dataset.meetingId)}/invitees/${encodeURIComponent(form.dataset.employee)}/reply`,
+          { method: "POST", body: JSON.stringify({ message }) }
+        );
+        toast(result.prompt
+          ? "Your calendar agent needs another response."
+          : `${employeeLabels[result.employee] || result.employee}: ${result.outcome}`);
+        await refresh();
+      } catch (error) {
+        toast(error.message);
+        button.disabled = false;
+      }
+    });
+    async function waitForMove(jobId) {
+      while (true) {
+        const job = await request(`/api/moves/${encodeURIComponent(jobId)}`);
+        if (job.error) throw new Error(job.error);
+        if (job.state === "awaiting_confirmation") {
+          $("#confirm-message").textContent = job.prompt;
+          $("#confirm-dialog").showModal();
+          const answer = await new Promise((resolve) => {
+            $("#confirm-yes").onclick = () => resolve("yes");
+            $("#confirm-no").onclick = () => resolve("no");
+          });
+          $("#confirm-dialog").close();
+          await request(`/api/moves/${encodeURIComponent(jobId)}/decision`, {
+            method: "POST", body: JSON.stringify({ answer })
+          });
+        } else if (job.state === "complete") {
+          if (job.error) throw new Error(job.error);
+          if (job.result?.status !== "COMPLETED") {
+            const result = job.result || {};
+            const details = [];
+            for (const key of ["preflight_results", "approval_results", "move_results"]) {
+              for (const [employee, outcome] of Object.entries(result[key] || {})) {
+                details.push(`${employeeLabels[employee] || employee}: ${outcome}`);
+              }
+            }
+            if (result.reason) details.push(`Reason: ${result.reason}`);
+            if (result.error) details.push(`Error: ${result.error}`);
+            throw new Error([
+              result.status || "The meeting could not be moved.",
+              ...details
+            ].join("\n"));
+          }
+          return job.result;
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 350));
+        }
+      }
+    }
+    $("#move-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const meetingId = $("#move-meeting-id").value;
+        const started = await request(`/api/meetings/${encodeURIComponent(meetingId)}/move`, {
+          method: "POST",
+          body: JSON.stringify({ start: $("#move-start").value, end: $("#move-end").value })
+        });
+        $("#move-dialog").close();
+        await waitForMove(started.job_id);
+        toast("Meeting rescheduled across employee calendars.");
+        await refresh();
+      } catch (error) {
+        if ($("#move-dialog").open) $("#move-dialog").close();
+        openAction("Reschedule not completed", "The meeting was not moved. Agent response:", `
+          <div class="prompt-text diagnostic-text">${esc(error.message)}</div>
+          <div class="dialog-actions"><button class="button" data-action-close>Close</button></div>`);
+        $("#action-content").querySelector("[data-action-close]").onclick = () => $("#action-dialog").close();
+        await refresh();
+      } finally { button.disabled = false; }
+    });
+    $("#employee-request-list").addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-decision-action]");
+      if (!btn) return;
+      const form = btn.closest(".employee-request");
+      if (!form) return;
+      const action = btn.dataset.decisionAction;
+      const noteInput = form.querySelector(".decision-note-input");
+      const note = noteInput ? noteInput.value.trim() : "";
+      const suggestPanel = form.querySelector(".suggest-panel");
+      const suggestInput = form.querySelector(".suggest-time-input");
+      const textarea = form.querySelector('textarea[name="message"]');
+
+      if (action === "suggest") {
+        if (suggestPanel && suggestPanel.style.display === "none") {
+          suggestPanel.style.display = "block";
+          if (suggestInput) {
+            suggestInput.focus();
+            suggestInput.select();
+          }
+          return;
+        }
+        // If panel is already open, focus the input or use its value if provided
+        if (suggestInput && !suggestInput.value.trim()) {
+          suggestInput.focus();
+          suggestInput.placeholder = "Type your suggested slot here, e.g. Tomorrow at 3:00 PM";
+          return;
+        }
+      }
+
+      if (action === "approve") {
+        textarea.value = "Approve reschedule" + (note ? ": " + note : "");
+      } else if (action === "decline") {
+        textarea.value = "Decline (can't reschedule, it's important)" + (note ? ": " + note : "");
+      } else if (action === "suggest" || action === "submit-suggest") {
+        const timeVal = (suggestInput && suggestInput.value.trim()) || "Tomorrow at 3:00 PM";
+        textarea.value = "Suggest another time: " + timeVal + (note ? " (" + note + ")" : "");
+      }
+      form.requestSubmit();
+    });
+    $("#employee-request-list").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && event.target.classList.contains("suggest-time-input")) {
+        event.preventDefault();
+        const form = event.target.closest(".employee-request");
+        if (!form) return;
+        const noteInput = form.querySelector(".decision-note-input");
+        const note = noteInput ? noteInput.value.trim() : "";
+        const timeVal = event.target.value.trim() || "Tomorrow at 3:00 PM";
+        const textarea = form.querySelector('textarea[name="message"]');
+        textarea.value = "Suggest another time: " + timeVal + (note ? " (" + note + ")" : "");
+        form.requestSubmit();
+      }
+    });
+    const defaultPasswords = {
+      organizer: "admin123",
+      priya: "priya123",
+      arjun: "arjun123",
+      meera: "meera123"
+    };
+    async function loginAs(username, password) {
+      try {
+        const res = await request("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ username, password })
+        });
+        localStorage.setItem("gather-token", res.token);
+        currentUser = res.user;
+        renderUserBadge();
+        $("#auth-dialog").close();
+        toast(`Logged in as ${currentUser.name}`);
+        if (currentUser.role === "employee") {
+          selectedEmployee = currentUser.username;
+        }
+        await refresh();
+      } catch (err) {
+        toast("Login failed: " + err.message);
+      }
+    }
+    const openAuthBtn = $("#open-auth-btn");
+    if (openAuthBtn) {
+      openAuthBtn.addEventListener("click", () => {
+        $("#auth-dialog").showModal();
+      });
+    }
+    const authCloseBtn = $("#auth-close");
+    if (authCloseBtn) {
+      authCloseBtn.addEventListener("click", () => {
+        $("#auth-dialog").close();
+      });
+    }
+    document.querySelectorAll("[data-login-user]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const user = btn.dataset.loginUser;
+        const pass = defaultPasswords[user] || "password123";
+        loginAs(user, pass);
+      });
+    });
+    const customLoginForm = $("#custom-login-form");
+    if (customLoginForm) {
+      customLoginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const user = $("#login-username").value.trim();
+        const pass = $("#login-password").value.trim();
+        if (user && pass) loginAs(user, pass);
+      });
+    }
+    document.querySelectorAll("[data-close]").forEach((button) => {
+      button.addEventListener("click", () => document.getElementById(button.dataset.close).close());
+    });
+    $("#move-close").addEventListener("click", () => $("#move-dialog").close());
+
+    // Agent Registry Event Listeners
+    const openRegBtn = $("#open-register-dialog-btn");
+    if (openRegBtn) {
+      openRegBtn.addEventListener("click", () => {
+        $("#register-agent-dialog").showModal();
+      });
+    }
+    const regCloseBtn = $("#register-dialog-close");
+    if (regCloseBtn) {
+      regCloseBtn.addEventListener("click", () => {
+        $("#register-agent-dialog").close();
+      });
+    }
+    const regCancelBtn = $("#register-agent-cancel");
+    if (regCancelBtn) {
+      regCancelBtn.addEventListener("click", () => {
+        $("#register-agent-dialog").close();
+      });
+    }
+    const refreshRegBtn = $("#refresh-registry-btn");
+    if (refreshRegBtn) {
+      refreshRegBtn.addEventListener("click", async () => {
+        await renderRegistry();
+        await refresh();
+        toast("Agent Registry refreshed.");
+      });
+    }
+    const regForm = $("#register-agent-form");
+    if (regForm) {
+      regForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = $("#reg-agent-id").value.trim().toLowerCase();
+        const name = $("#reg-agent-name").value.trim();
+        const url = $("#reg-agent-url").value.trim();
+        const role = $("#reg-agent-role").value;
+        const dept = $("#reg-agent-dept").value.trim();
+        const rawSkills = $("#reg-agent-skills").value;
+        const skills = rawSkills.split(",").map(s => s.trim()).filter(Boolean);
+        try {
+          await request("/api/registry/agents", {
+            method: "POST",
+            body: JSON.stringify({ id, name, url, role, skills, metadata: { department: dept } })
+          });
+          toast(`Agent '${name}' registered successfully!`);
+          $("#register-agent-dialog").close();
+          regForm.reset();
+          $("#reg-agent-skills").value = "calendar, meetings, book_meeting";
+          await renderRegistry();
+          await refresh();
+        } catch (err) {
+          toast("Registration failed: " + err.message);
+        }
+      });
+    }
+    document.addEventListener("click", async (e) => {
+      const pingBtn = e.target.closest("[data-ping-agent]");
+      if (pingBtn) {
+        const id = pingBtn.dataset.pingAgent;
+        pingBtn.disabled = true;
+        pingBtn.textContent = "Pinging…";
+        try {
+          const res = await request(`/api/registry/agents/${encodeURIComponent(id)}/ping`, { method: "POST" });
+          toast(`${id.toUpperCase()} agent: ${res.status.toUpperCase()}`);
+          await renderRegistry();
+        } catch (err) {
+          toast(`Ping failed: ${err.message}`);
+        } finally {
+          pingBtn.disabled = false;
+          pingBtn.textContent = "Ping";
+        }
+        return;
+      }
+      const unregBtn = e.target.closest("[data-unregister-agent]");
+      if (unregBtn) {
+        const id = unregBtn.dataset.unregisterAgent;
+        if (!confirm(`Are you sure you want to unregister agent '${id}' from the registry?`)) return;
+        try {
+          await request(`/api/registry/agents/${encodeURIComponent(id)}`, { method: "DELETE" });
+          toast(`Agent '${id}' removed from registry.`);
+          await renderRegistry();
+          await refresh();
+        } catch (err) {
+          toast(`Unregister failed: ${err.message}`);
+        }
+        return;
+      }
+    });
+
+    setupPage();
+    renderChat();
+    checkAuth().then(refresh);
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

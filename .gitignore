@@ -1,0 +1,30 @@
+# Environment & Secrets
+.env
+*.env
+data/credentials.json
+data/google_calendar_token.json
+data/token_*.json
+*client_secret*.json
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# SQLite Databases & Lock files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

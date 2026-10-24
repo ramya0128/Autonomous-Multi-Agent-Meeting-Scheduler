@@ -1,0 +1,212 @@
+{
+  "review-one:meera": {
+    "task_id": "task-review-one",
+    "context_id": "context-review-one",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: Invitation accepted",
+    "meeting_id": "review-one",
+    "kind": "invite",
+    "employee": "meera",
+    "updated_at": "2026-10-24T11:51:26+05:30"
+  },
+  "review-two:meera": {
+    "task_id": "task-review-two",
+    "context_id": "context-review-two",
+    "state": "INPUT_REQUIRED",
+    "outcome": "INPUT_REQUIRED: Question for review-two",
+    "meeting_id": "review-two",
+    "kind": "invite",
+    "employee": "meera",
+    "updated_at": "2026-10-24T11:51:26+05:30"
+  },
+  "salary-discussion:arjun": {
+    "task_id": "task-1",
+    "context_id": "context-1",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Invitation declined",
+    "meeting_id": "salary-discussion",
+    "kind": "invite",
+    "employee": "arjun",
+    "updated_at": "2026-10-24T11:51:27+05:30"
+  },
+  "prod-review:priya": {
+    "task_id": "3bcc3446-6c95-4aca-aee3-21d0e60785dc",
+    "context_id": "b49b056a-6afe-42a3-a512-a7c5ef64257a",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Important, cannot reschedule",
+    "meeting_id": "prod-review",
+    "kind": "invite",
+    "employee": "priya",
+    "updated_at": "2026-10-19T14:53:30+05:30"
+  },
+  "mors:arjun": {
+    "task_id": "dc88edb4-5b57-4587-8d83-a9eb11981dd8",
+    "context_id": "7ffd463a-5c22-4b85-a5c8-1d264b66d1cf",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Declined by user (task killed)",
+    "meeting_id": "mors",
+    "kind": "invite",
+    "employee": "arjun",
+    "updated_at": "2026-10-19T16:00:00+05:30"
+  },
+  "sprint:priya": {
+    "task_id": "3fa06a1c-57d6-4b9b-9e29-fa0e1421f34f",
+    "context_id": "439bbed8-dce0-4d14-8ca3-808a23c7d817",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"REMOVED\", \"employee\": \"priya\", \"meeting_id\": \"sprint\", \"removed\": true, \"event\": {\"id\": \"pnct9avue5dfb0a4ld1f25cv98\", \"title\": \"sprint\", \"start\": \"2026-10-23T15:00:00+05:30\", \"end\": \"2026-10-23T16:00:00+05:30\", \"location\": \"zoom\", \"meeting_id\": \"sprint\"}}",
+    "meeting_id": "sprint",
+    "kind": "operation",
+    "employee": "priya",
+    "updated_at": "2026-10-24T07:56:34+05:30"
+  },
+  "review-2:priya": {
+    "task_id": "775245e1-0f12-4936-a9ed-250557dc80ba",
+    "context_id": "1395da5f-d378-4ee5-a414-a8a26368df4a",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"MOVED\", \"employee\": \"priya\", \"event\": {\"id\": \"4dpj8rf0mseau4lcaorr5a22o0\", \"title\": \"review\", \"start\": \"2026-10-28T09:00:00+05:30\", \"end\": \"2026-10-28T10:00:00+05:30\", \"location\": \"\", \"meeting_id\": \"review-2\", \"link\": \"https://www.google.com/calendar/event?eid=NGRwajhyZjBtc2VhdTRsY2FvcnI1YTIybzAgNTlhOGQ1ZDRiYjFhN2E4YzFiN2I4MmIxN2RlNGIwZWVjMTU1YmUyZTExYzhhMDYzMzBhODAyYWViYjUyMjk3ZEBn\"}}",
+    "meeting_id": "review-2",
+    "kind": "operation",
+    "employee": "priya",
+    "updated_at": "2026-10-19T16:31:37+05:30"
+  },
+  "review-2:arjun": {
+    "task_id": "b7efb688-ad41-40da-acb1-b835a89a0318",
+    "context_id": "ef080b6f-9733-4316-8b4c-b0f2d86af150",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"MOVED\", \"employee\": \"arjun\", \"event\": {\"id\": \"746no5qd6sq7q2h25mc6v6ddp0\", \"title\": \"review\", \"start\": \"2026-10-28T09:00:00+05:30\", \"end\": \"2026-10-28T10:00:00+05:30\", \"location\": \"\", \"meeting_id\": \"review-2\", \"link\": \"https://www.google.com/calendar/event?eid=NzQ2bm81cWQ2c3E3cTJoMjVtYzZ2NmRkcDAgZmEzOTQ2YzM4YzNmOTE4NDliZjM1YTJkOGYyZTcwY2MzMDk2OTU4YzQ3MzUwYjIyZmIxMDQ3NGUyZGRjYTE0OUBn\"}}",
+    "meeting_id": "review-2",
+    "kind": "operation",
+    "employee": "arjun",
+    "updated_at": "2026-10-19T16:31:40+05:30"
+  },
+  "review-3:priya": {
+    "task_id": "8806b8df-6f26-4fb2-9793-465bba1c6510",
+    "context_id": "07cc0d97-f104-4b02-bd31-786be2aae569",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"g0cegau2bo2u087po48qkmmd98\", \"title\": \"review\", \"start\": \"2026-10-28T10:00:00+05:30\", \"end\": \"2026-10-28T11:00:00+05:30\", \"location\": \"Zoom\", \"link\": \"https://www.google.com/calendar/event?eid=ZzBjZWdhdTJibzJ1MDg3cG80OHFrbW1kOTggNTlhOGQ1ZDRiYjFhN2E4YzFiN2I4MmIxN2RlNGIwZWVjMTU1YmUyZTExYzhhMDYzMzBhODAyYWViYjUyMjk3ZEBn\", \"employee\": \"priya\", \"summary\": \"The meeting **review** has been added to your calendar for\\u202f2026\\u201110\\u201128\\u202f10:00\\u202f\\u2013\\u202f11:00\\u202fAsia/Kolkata (Zoom).\"}",
+    "meeting_id": "review-3",
+    "kind": "invite",
+    "employee": "priya",
+    "updated_at": "2026-10-19T15:59:48+05:30"
+  },
+  "sprint:meera": {
+    "task_id": "old-task",
+    "context_id": "old-ctx",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Decline: cannot make it",
+    "meeting_id": "sprint",
+    "kind": "invite",
+    "employee": "meera",
+    "updated_at": "2026-10-24T11:51:27+05:30"
+  },
+  "review-3:meera": {
+    "task_id": "c3891b42-3d15-4a21-be3b-ca466f5801cb",
+    "context_id": "561ef43c-3c5c-4573-ad5e-a2cfc50ab8f7",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"vob25d00i7hb2bvk2muul235rg\", \"title\": \"review\", \"start\": \"2026-10-28T10:00:00+05:30\", \"end\": \"2026-10-28T11:00:00+05:30\", \"location\": \"Zoom\", \"meeting_id\": \"review-3\", \"link\": \"https://www.google.com/calendar/event?eid=dm9iMjVkMDBpN2hiMmJ2azJtdXVsMjM1cmcgYzJkOWIzYWZjMTJmMmJjMTYyZDZlYzg1ODRkMDllYTMxN2IzN2FhNDAxNTkwODc5OWM1MDFhOWNhYjI1NzkxNEBn\", \"employee\": \"meera\", \"summary\": \"\"}",
+    "meeting_id": "review-3",
+    "kind": "invite",
+    "employee": "meera",
+    "updated_at": "2026-10-19T16:28:27+05:30"
+  },
+  "retrospective:priya": {
+    "task_id": "23b1e2a7-e6bd-44fd-9dea-0718785e6b3b",
+    "context_id": "36c6eaee-a3ac-427e-a3ab-1f5fc64fa438",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"f7najfeh88otj7a5oe063qto1k\", \"title\": \"retrospective\", \"start\": \"2026-10-27T09:00:00+05:30\", \"end\": \"2026-10-27T10:00:00+05:30\", \"location\": \"offcie\", \"link\": \"https://www.google.com/calendar/event?eid=ZjduYWpmZWg4OG90ajdhNW9lMDYzcXRvMWsgNTlhOGQ1ZDRiYjFhN2E4YzFiN2I4MmIxN2RlNGIwZWVjMTU1YmUyZTExYzhhMDYzMzBhODAyYWViYjUyMjk3ZEBn\", \"employee\": \"priya\", \"summary\": \"\"}",
+    "meeting_id": "retrospective",
+    "kind": "invite",
+    "employee": "priya",
+    "updated_at": "2026-10-19T16:30:26+05:30"
+  },
+  "retrospective:arjun": {
+    "task_id": "e872891a-1d92-4604-904c-051a387c1a15",
+    "context_id": "ff310729-f607-4a0f-b22c-4ae5777b75d9",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"rke5sgrbg3scai1ujf8f73jfm4\", \"title\": \"retrospective\", \"start\": \"2026-10-27T09:00:00+05:30\", \"end\": \"2026-10-27T10:00:00+05:30\", \"location\": \"offcie\", \"link\": \"https://www.google.com/calendar/event?eid=cmtlNXNncmJnM3NjYWkxdWpmOGY3M2pmbTQgZmEzOTQ2YzM4YzNmOTE4NDliZjM1YTJkOGYyZTcwY2MzMDk2OTU4YzQ3MzUwYjIyZmIxMDQ3NGUyZGRjYTE0OUBn\", \"employee\": \"arjun\", \"summary\": \"\"}",
+    "meeting_id": "retrospective",
+    "kind": "invite",
+    "employee": "arjun",
+    "updated_at": "2026-10-19T16:30:30+05:30"
+  },
+  "retrospective-2:arjun": {
+    "task_id": "3630ab1a-7420-4ddd-9746-82be31317607",
+    "context_id": "6447eba5-db84-42ab-be25-ac7a7e69daf5",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"REMOVED\", \"employee\": \"arjun\", \"meeting_id\": \"retrospective-2\", \"removed\": true, \"event\": {\"id\": \"fk536em8pd6s0s9ugcjpg3crj8\", \"title\": \"retrospective\", \"start\": \"2026-10-25T11:00:00+05:30\", \"end\": \"2026-10-25T12:00:00+05:30\", \"location\": \"zoom\", \"meeting_id\": \"retrospective-2\"}}",
+    "meeting_id": "retrospective-2",
+    "kind": "operation",
+    "employee": "arjun",
+    "updated_at": "2026-10-19T16:34:47+05:30"
+  },
+  "increment:arjun": {
+    "task_id": "f94f691f-918d-4843-8393-83bea3d708ed",
+    "context_id": "3f1196b4-9809-44f8-8716-beaddcb8f092",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"ALREADY_ABSENT\", \"employee\": \"arjun\", \"meeting_id\": \"increment\", \"removed\": false}",
+    "meeting_id": "increment",
+    "kind": "operation",
+    "employee": "arjun",
+    "updated_at": "2026-10-19T16:34:34+05:30"
+  },
+  "prod-review-2:priya": {
+    "task_id": "8f266b97-1d2f-4623-a384-dea250f797d1",
+    "context_id": "2d819133-2831-426e-8f7a-0eaab3564678",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Declined by user (task killed)",
+    "meeting_id": "prod-review-2",
+    "kind": "invite",
+    "employee": "priya",
+    "updated_at": "2026-10-24T07:47:00+05:30"
+  },
+  "product-review:arjun": {
+    "task_id": "e38231de-04a5-442c-8af3-129b97e67632",
+    "context_id": "0c83c90d-8e7b-4b45-88f5-88197bbf3a7c",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"REMOVED\", \"employee\": \"arjun\", \"meeting_id\": \"product-review\", \"removed\": true, \"event\": {\"id\": \"9l5glbrsvoo5d4018edj713d5c\", \"title\": \"Product Review\", \"start\": \"2026-10-27T17:00:00+05:30\", \"end\": \"2026-10-27T17:30:00+05:30\", \"location\": \"\", \"meeting_id\": \"product-review\"}}",
+    "meeting_id": "product-review",
+    "kind": "operation",
+    "employee": "arjun",
+    "updated_at": "2026-10-23T23:54:55+05:30"
+  },
+  "product-review:priya": {
+    "task_id": "c5e44246-caa7-4452-b391-9407e2824b5d",
+    "context_id": "01061a79-9734-4bd9-9a0f-0c882da75b94",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"REMOVED\", \"employee\": \"priya\", \"meeting_id\": \"product-review\", \"removed\": true, \"event\": {\"id\": \"peup14nurqvnsv39apqim8rcsk\", \"title\": \"Product Review\", \"start\": \"2026-10-27T17:00:00+05:30\", \"end\": \"2026-10-27T17:30:00+05:30\", \"location\": \"\", \"meeting_id\": \"product-review\"}}",
+    "meeting_id": "product-review",
+    "kind": "operation",
+    "employee": "priya",
+    "updated_at": "2026-10-23T23:55:02+05:30"
+  },
+  "sprint-6:arjun": {
+    "task_id": "b41fc412-4acf-45b3-b4ab-d0033d94f4af",
+    "context_id": "a9557dce-089e-4164-a3e1-660590c159e6",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"status\": \"REMOVED\", \"employee\": \"arjun\", \"meeting_id\": \"sprint-6\", \"removed\": true, \"event\": {\"id\": \"rnun0ekeigc3vaj96rss7bi86o\", \"title\": \"sprint\", \"start\": \"2026-10-20T09:00:00+05:30\", \"end\": \"2026-10-20T09:30:00+05:30\", \"location\": \"zoom\", \"meeting_id\": \"sprint-6\"}}",
+    "meeting_id": "sprint-6",
+    "kind": "operation",
+    "employee": "arjun",
+    "updated_at": "2026-10-24T07:56:19+05:30"
+  },
+  "prod:meera": {
+    "task_id": "0f557689-20cf-4ad9-8cdf-e817753852b6",
+    "context_id": "0847eb5c-0a39-4970-87a9-04bf7c021f7d",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"6i6598q7630vr2o61h6bq64n20\", \"title\": \"prod\", \"start\": \"2026-10-28T12:00:00+05:30\", \"end\": \"2026-10-28T13:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=Nmk2NTk4cTc2MzB2cjJvNjFoNmJxNjRuMjAgYzJkOWIzYWZjMTJmMmJjMTYyZDZlYzg1ODRkMDllYTMxN2IzN2FhNDAxNTkwODc5OWM1MDFhOWNhYjI1NzkxNEBn\", \"employee\": \"meera\", \"summary\": \"\"}",
+    "meeting_id": "prod",
+    "kind": "invite",
+    "employee": "meera",
+    "updated_at": "2026-10-24T07:58:05+05:30"
+  },
+  "interview:rahul": {
+    "task_id": "1b29b640-1346-4856-8d7f-8720ef1607bd",
+    "context_id": "0292bda2-bbb4-4470-95c0-ca128b0fbe0c",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"vg24thidc6t2bru5b89c65cqp8\", \"title\": \"Interview\", \"start\": \"2026-10-29T14:00:00+05:30\", \"end\": \"2026-10-29T15:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=dmcyNHRoaWRjNnQyYnJ1NWI4OWM2NWNxcDggNzYzY2Q0Y2FjYzU5YjIxYmI3Nzk3MzhiY2UwZjFhZTYzYTdlNWRkYTBjNzljNzM1N2VmMzc3MGJjMzk5MjA2NkBn\", \"employee\": \"rahul\", \"summary\": \"\"}",
+    "meeting_id": "interview",
+    "kind": "invite",
+    "employee": "rahul",
+    "updated_at": "2026-10-24T11:18:33+05:30"
+  }
+}

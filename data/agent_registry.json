@@ -1,0 +1,88 @@
+{
+  "arjun": {
+    "id": "arjun",
+    "name": "Arjun Mehta",
+    "url": "http://127.0.0.1:9102",
+    "role": "employee",
+    "skills": [
+      "calendar",
+      "meetings",
+      "book_meeting"
+    ],
+    "status": "online",
+    "registered_at": "2026-10-23T00:00:00+05:30",
+    "last_seen": "2026-10-24T11:33:44+05:30",
+    "metadata": {
+      "department": "Product",
+      "email": "arjun@example.com"
+    }
+  },
+  "meera": {
+    "id": "meera",
+    "name": "Meera Iyer",
+    "url": "http://127.0.0.1:9103",
+    "role": "employee",
+    "skills": [
+      "calendar",
+      "meetings",
+      "book_meeting"
+    ],
+    "status": "online",
+    "registered_at": "2026-10-23T00:00:00+05:30",
+    "last_seen": "2026-10-24T11:33:44+05:30",
+    "metadata": {
+      "department": "Design",
+      "email": "meera@example.com"
+    }
+  },
+  "priya": {
+    "id": "priya",
+    "name": "Priya Sharma",
+    "url": "http://127.0.0.1:9101",
+    "role": "employee",
+    "skills": [
+      "calendar",
+      "meetings",
+      "book_meeting"
+    ],
+    "status": "online",
+    "registered_at": "2026-10-23T00:00:00+05:30",
+    "last_seen": "2026-10-24T11:33:44+05:30",
+    "metadata": {
+      "department": "Engineering",
+      "email": "priya@example.com"
+    }
+  },
+  "rahul": {
+    "id": "rahul",
+    "name": "Rahul",
+    "url": "http://127.0.0.1:9104",
+    "role": "employee",
+    "skills": [
+      "calendar",
+      "meetings",
+      "book_meeting"
+    ],
+    "status": "online",
+    "registered_at": "2026-10-24T11:05:21+05:30",
+    "last_seen": "2026-10-24T11:33:44+05:30",
+    "metadata": {}
+  },
+  "ramya": {
+    "id": "ramya",
+    "name": "Ramya Oli",
+    "url": "http://127.0.0.1:9105",
+    "role": "employee",
+    "skills": [
+      "calendar",
+      "meetings",
+      "book_meeting"
+    ],
+    "status": "online",
+    "registered_at": "2026-10-24T11:33:13+05:30",
+    "last_seen": "2026-10-24T11:33:46+05:30",
+    "metadata": {
+      "department": "Operations"
+    }
+  }
+}

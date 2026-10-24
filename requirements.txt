@@ -1,0 +1,10 @@
+a2a-sdk[http-server]==1.2.1
+uvicorn
+httpx
+groq
+python-dotenv
+tzdata
+# Only needed if CALENDAR_BACKEND=google:
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2

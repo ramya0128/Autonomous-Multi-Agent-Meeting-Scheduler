@@ -1,0 +1,26 @@
+{
+  "organizer": {
+    "username": "organizer",
+    "name": "Meeting Organizer",
+    "role": "organizer",
+    "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
+  },
+  "priya": {
+    "username": "priya",
+    "name": "Priya Sharma",
+    "role": "employee",
+    "password_hash": "0a8b8dfad3f637d7d30fed7b108c5c5986c4775d14cab26ec9279866eba99116"
+  },
+  "arjun": {
+    "username": "arjun",
+    "name": "Arjun Mehta",
+    "role": "employee",
+    "password_hash": "572350dbd3dca1b229beee04f34710f1b9c0b71bb1da4ba8fda3161a85109a73"
+  },
+  "meera": {
+    "username": "meera",
+    "name": "Meera Iyer",
+    "role": "employee",
+    "password_hash": "f1efdb63a539cc0d48242c0b36a25be8df9116d3460ec650629c9ef86b542e1b"
+  }
+}
