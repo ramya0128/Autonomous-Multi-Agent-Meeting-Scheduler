@@ -279,6 +279,7 @@ async def get_state(request: Request):
     pending_decisions = storage.get_pending_decisions(
         employee=user["username"] if is_employee else None
     )
+    pending_proposals = storage.get_pending_proposals()
 
     return JSONResponse({
         "meetings": meetings,
@@ -287,6 +288,7 @@ async def get_state(request: Request):
         "calendar_errors": calendar_errors,
         "employee_requests": employee_requests,
         "pending_decisions": pending_decisions,
+        "pending_proposals": pending_proposals,
         "feed": feed,
         "user": user,
         "calendar_backend": os.getenv("CALENDAR_BACKEND", "fake").strip().lower(),
@@ -309,6 +311,92 @@ async def chat(request: Request):
     ):
         return JSONResponse({"error": "conversation_id must be a non-empty string"}, status_code=400)
     conversation_id = conversation_id or str(uuid.uuid4())
+
+    # Check if there is an active proposal from an employee awaiting organizer approval
+    active_props = storage.get_pending_proposals()
+    if active_props:
+        prop = active_props[0]
+        cleaned_msg = message.strip().lower()
+        if company.company_tools._is_yes(cleaned_msg):
+            try:
+                start_iso, end_iso = company.company_tools.resolve_suggested_time_to_iso(prop["suggested_time"])
+                res = company.company_tools.apply_reschedule_to_meeting(prop["meeting_id"], start_iso, end_iso)
+                if isinstance(res, dict) and res.get("status") == "ERROR":
+                    err_msg = res.get("error", "Failed to reschedule meeting")
+                    reply = f"Could not reschedule '{prop['meeting_title']}': {err_msg}"
+                    with CHAT_SESSIONS_LOCK:
+                        conv = CHAT_SESSIONS.setdefault(
+                            conversation_id,
+                            {"messages": [], "lock": asyncio.Lock(), "updated_at": time.monotonic()},
+                        )
+                        conv["messages"].append({"role": "user", "content": message.strip()})
+                        conv["messages"].append({"role": "assistant", "content": reply})
+                    return JSONResponse({
+                        "conversation_id": conversation_id,
+                        "assistant": reply,
+                        "needs_response": False,
+                    })
+            except Exception as e:
+                reply = f"Could not reschedule '{prop['meeting_title']}': {e}"
+                with CHAT_SESSIONS_LOCK:
+                    conv = CHAT_SESSIONS.setdefault(
+                        conversation_id,
+                        {"messages": [], "lock": asyncio.Lock(), "updated_at": time.monotonic()},
+                    )
+                    conv["messages"].append({"role": "user", "content": message.strip()})
+                    conv["messages"].append({"role": "assistant", "content": reply})
+                return JSONResponse({
+                    "conversation_id": conversation_id,
+                    "assistant": reply,
+                    "needs_response": False,
+                })
+            storage.resolve_organizer_proposal(prop["id"], "approved")
+            storage.log_event(
+                "PROPOSAL_APPROVED",
+                actor="organizer",
+                message=f"Organizer accepted suggested time '{prop['suggested_time']}'. Meeting '{prop['meeting_title']}' scheduled.",
+                meeting_id=prop["meeting_id"],
+                details={"start": start_iso, "end": end_iso},
+            )
+            reply = f"Great! Meeting '{prop['meeting_title']}' has been successfully scheduled for {prop['suggested_time']} ({start_iso} to {end_iso}) across all invitees' calendars."
+            with CHAT_SESSIONS_LOCK:
+                conv = CHAT_SESSIONS.setdefault(
+                    conversation_id,
+                    {"messages": [], "lock": asyncio.Lock(), "updated_at": time.monotonic()},
+                )
+                conv["messages"].append({"role": "user", "content": message.strip()})
+                conv["messages"].append({"role": "assistant", "content": reply})
+            return JSONResponse({
+                "conversation_id": conversation_id,
+                "assistant": reply,
+                "needs_response": False,
+            })
+        elif company.company_tools._is_no(cleaned_msg):
+            storage.resolve_organizer_proposal(prop["id"], "rejected")
+            with company.company_tools.MEETINGS_LOCK:
+                m = next((item for item in company.company_tools.MEETINGS if item.get("id") == prop["meeting_id"]), None)
+                if m:
+                    m.pop("suggested_reschedule", None)
+                    company.company_tools._save_meetings(company.company_tools.MEETINGS)
+            storage.log_event(
+                "PROPOSAL_REJECTED",
+                actor="organizer",
+                message=f"Organizer declined suggested time '{prop['suggested_time']}' for '{prop['meeting_title']}'.",
+                meeting_id=prop["meeting_id"],
+            )
+            reply = f"Understood. The proposed time of {prop['suggested_time']} for '{prop['meeting_title']}' was declined. The meeting will not be scheduled at that time."
+            with CHAT_SESSIONS_LOCK:
+                conv = CHAT_SESSIONS.setdefault(
+                    conversation_id,
+                    {"messages": [], "lock": asyncio.Lock(), "updated_at": time.monotonic()},
+                )
+                conv["messages"].append({"role": "user", "content": message.strip()})
+                conv["messages"].append({"role": "assistant", "content": reply})
+            return JSONResponse({
+                "conversation_id": conversation_id,
+                "assistant": reply,
+                "needs_response": False,
+            })
 
     with CHAT_SESSIONS_LOCK:
         conversation = CHAT_SESSIONS.setdefault(
@@ -338,6 +426,9 @@ async def chat(request: Request):
             "that message answers the pending question. Do not repeat a completed tool "
             "action when continuing after an answer."
         )
+        if active_props:
+            prop = active_props[0]
+            system += f"\nNote: Employee {prop['employee_name']} suggested a new time '{prop['suggested_time']}' for meeting '{prop['meeting_title']}'."
         try:
             answer = company.run_tool_loop(
                 system,
@@ -430,6 +521,54 @@ async def add_invitee(request: Request):
         return JSONResponse({"error": str(error)}, status_code=400)
 
 
+def _handle_employee_time_suggestion(meeting_id: str, employee: str, suggested_time: str, note: str = ""):
+    meeting = _meeting(meeting_id)
+    m_title = meeting.get("title", meeting_id) if meeting else meeting_id
+    emp_name = EMPLOYEE_NAMES.get(employee, employee.title())
+
+    # 1. Create organizer proposal in storage
+    prop = storage.create_organizer_proposal(
+        meeting_id=meeting_id,
+        meeting_title=m_title,
+        employee=employee,
+        suggested_time=suggested_time,
+        note=note,
+    )
+
+    # 2. Update meeting object in MEETINGS
+    with company.company_tools.MEETINGS_LOCK:
+        m = next((item for item in company.company_tools.MEETINGS if item.get("id") == meeting_id), None)
+        if m:
+            m["suggested_reschedule"] = {
+                "proposal_id": prop["id"],
+                "employee": employee,
+                "employee_name": emp_name,
+                "suggested_time": suggested_time,
+                "note": note,
+                "status": "pending_organizer",
+            }
+            m["status"] = "PENDING_ORGANIZER_APPROVAL"
+            company.company_tools._save_meetings(company.company_tools.MEETINGS)
+
+    # 3. Add to chat history in active chat sessions
+    chat_msg = (
+        f"🔔 **{emp_name}** suggested a new time for **'{m_title}'**: **{suggested_time}**"
+        f"{f' ({note})' if note else ''}.\n"
+        f"Would you like to schedule the meeting at this time? (Please reply Yes or No)"
+    )
+    with CHAT_SESSIONS_LOCK:
+        for conv in CHAT_SESSIONS.values():
+            conv["messages"].append({
+                "role": "assistant",
+                "content": chat_msg,
+                "proposal_id": prop["id"],
+                "meeting_id": meeting_id,
+                "suggested_time": suggested_time,
+                "needs_response": True,
+            })
+    return prop
+
+
 async def reply_to_invitee(request: Request):
     data, error_response = await read_json_object(request)
     if error_response:
@@ -454,11 +593,18 @@ async def reply_to_invitee(request: Request):
         if not isinstance(message, str) or not message.strip():
             return JSONResponse({"error": "A non-empty response is required"}, status_code=400)
 
+        # Check if response suggests another time
+        suggest_match = re.search(r"suggest another time:\s*([^(\n]+)(?:\s*\((.*?)\))?", message, re.IGNORECASE)
+        if suggest_match:
+            s_time = suggest_match.group(1).strip()
+            s_note = (suggest_match.group(2) or "").strip()
+            _handle_employee_time_suggestion(meeting_id, employee, s_time, s_note)
+
         # Resolve any matching pending decision in storage
         for d in storage.get_pending_decisions(employee=employee):
             if d.get("meeting_id") == meeting_id:
-                action = "decline" if any(w in message.lower() for w in ("decline", "skip", "no", "can't")) else "approve_reschedule"
-                storage.resolve_pending_decision(d["id"], action, "", message.strip())
+                action = "suggest_time" if suggest_match else ("decline" if any(w in message.lower() for w in ("decline", "skip", "no", "can't")) else "approve_reschedule")
+                storage.resolve_pending_decision(d["id"], action, s_time if suggest_match else "", message.strip())
 
         result = await run_in_threadpool(
             company.reply_to_employee, employee, message.strip(), meeting_id)
@@ -548,6 +694,7 @@ async def respond_to_decision(request: Request):
         msg = f"Suggest another time: {suggested_time}. {note}".strip()
         feed_msg = f"{emp_name} suggested another time: {suggested_time}. Find another alternative."
         storage.log_event("DECISION_SUGGESTED_TIME", decision["employee"], feed_msg, meeting_id=decision["meeting_id"], details={"suggested_time": suggested_time, "note": note})
+        _handle_employee_time_suggestion(decision["meeting_id"], decision["employee"], suggested_time, note)
 
     storage.resolve_pending_decision(decision_id, action, suggested_time, note)
 
@@ -564,6 +711,70 @@ async def respond_to_decision(request: Request):
         "decision_id": decision_id,
         "employee": decision["employee"],
         "meeting_id": decision["meeting_id"],
+    })
+
+
+async def respond_to_proposal_api(request: Request):
+    proposal_id = request.path_params["proposal_id"]
+    data, error_response = await read_json_object(request)
+    if error_response:
+        return error_response
+    decision = str(data.get("decision", "")).strip().lower()
+    is_yes = company.company_tools._is_yes(decision)
+    is_no = company.company_tools._is_no(decision)
+    if not is_yes and not is_no:
+        return JSONResponse({"error": "Decision must be 'yes' or 'no'"}, status_code=400)
+
+    prop = storage.get_pending_proposal_by_id(proposal_id)
+    if not prop or prop.get("status") != "PENDING":
+        return JSONResponse({"error": "Proposal not found or already resolved"}, status_code=404)
+
+    meeting_id = prop["meeting_id"]
+    meeting_title = prop["meeting_title"]
+    suggested_time = prop["suggested_time"]
+
+    if is_yes:
+        try:
+            start_iso, end_iso = company.company_tools.resolve_suggested_time_to_iso(suggested_time)
+            res = company.company_tools.apply_reschedule_to_meeting(meeting_id, start_iso, end_iso)
+            if isinstance(res, dict) and res.get("status") == "ERROR":
+                return JSONResponse({"error": res.get("error", "Failed to reschedule meeting")}, status_code=400)
+        except Exception as e:
+            return JSONResponse({"error": f"Could not reschedule meeting: {e}"}, status_code=400)
+        storage.resolve_organizer_proposal(proposal_id, "approved")
+        storage.log_event(
+            "PROPOSAL_APPROVED",
+            actor="organizer",
+            message=f"Organizer accepted suggested time '{suggested_time}'. Meeting '{meeting_title}' scheduled.",
+            meeting_id=meeting_id,
+            details={"start": start_iso, "end": end_iso},
+        )
+        reply = f"Great! Meeting '{meeting_title}' has been successfully scheduled for {suggested_time} ({start_iso} to {end_iso}) across all invitees' calendars."
+    else:
+        storage.resolve_organizer_proposal(proposal_id, "rejected")
+        with company.company_tools.MEETINGS_LOCK:
+            m = next((item for item in company.company_tools.MEETINGS if item.get("id") == meeting_id), None)
+            if m:
+                m.pop("suggested_reschedule", None)
+                company.company_tools._save_meetings(company.company_tools.MEETINGS)
+        storage.log_event(
+            "PROPOSAL_REJECTED",
+            actor="organizer",
+            message=f"Organizer declined suggested time '{suggested_time}' for '{meeting_title}'.",
+            meeting_id=meeting_id,
+        )
+        reply = f"Understood. The proposed time of {suggested_time} for '{meeting_title}' was declined. The meeting will not be scheduled at that time."
+
+    with CHAT_SESSIONS_LOCK:
+        for conv in CHAT_SESSIONS.values():
+            conv["messages"].append({"role": "user", "content": "Yes, schedule for this time" if is_yes else "No, decline"})
+            conv["messages"].append({"role": "assistant", "content": reply})
+
+    return JSONResponse({
+        "success": True,
+        "decision": "approved" if is_yes else "rejected",
+        "message": reply,
+        "proposal_id": proposal_id,
     })
 
 
@@ -782,6 +993,11 @@ async def register_agent_api(request: Request):
     role = data.get("role", "employee")
     skills = data.get("skills")
     metadata = data.get("metadata") or {}
+    calendar_id = data.get("calendar_id") or data.get("google_calendar_id")
+    if calendar_id and str(calendar_id).strip():
+        calendar_id = str(calendar_id).strip()
+        metadata["google_calendar_id"] = calendar_id
+
     if isinstance(skills, str):
         skills = [s.strip() for s in skills.split(",") if s.strip()]
 
@@ -798,7 +1014,7 @@ async def register_agent_api(request: Request):
     # Auto-provision calendar for this employee
     try:
         import agents.calendar_backend as cb
-        cal_res = cb.create_calendar_for_employee(agent_id, name)
+        cal_res = cb.create_calendar_for_employee(agent_id, name, calendar_id=calendar_id)
         if cal_res.get("backend") == "google" and cal_res.get("calendar_id"):
             metadata["google_calendar_id"] = cal_res["calendar_id"]
     except Exception as cal_err:
@@ -810,7 +1026,7 @@ async def register_agent_api(request: Request):
             url=url,
             name=name,
             role=role,
-            skills=skills,
+            skills=skills or None,
             metadata=metadata,
         )
 
@@ -871,11 +1087,42 @@ async def ping_agent_api(request: Request):
         card = await get_agent_card(agent["url"])
         status = "online"
         card_name = getattr(card, "name", str(card))
+        if hasattr(card, "skills") and card.skills:
+            skill_ids = [s.id for s in card.skills if hasattr(s, "id")]
+            if skill_ids:
+                agent_registry.update_agent_skills(agent_id, skill_ids)
     except Exception as e:
-        status = "offline"
-        card_name = str(e)
+        match = re.search(r":(\d+)", agent.get("url", ""))
+        revived = False
+        if agent.get("role") == "employee" and match:
+            port = int(match.group(1))
+            _spawn_employee_agent_process(agent_id, port)
+            await asyncio.sleep(0.6)
+            try:
+                card = await get_agent_card(agent["url"])
+                status = "online"
+                card_name = getattr(card, "name", str(card))
+                if hasattr(card, "skills") and card.skills:
+                    skill_ids = [s.id for s in card.skills if hasattr(s, "id")]
+                    if skill_ids:
+                        agent_registry.update_agent_skills(agent_id, skill_ids)
+                revived = True
+            except Exception:
+                pass
+        if not revived:
+            status = "offline"
+            card_name = str(e)
     agent_registry.update_agent_status(agent_id, status)
     return JSONResponse({"id": agent_id, "status": status, "detail": card_name})
+
+
+async def sync_agent_skills_api(request: Request):
+    agent_id = request.path_params["agent_id"]
+    agent = agent_registry.get_agent(agent_id)
+    if not agent:
+        return JSONResponse({"error": f"Agent '{agent_id}' not found"}, status_code=404)
+    skills = agent_registry.sync_agent_skills(agent_id)
+    return JSONResponse({"success": True, "agent_id": agent_id, "skills": skills})
 
 
 routes = [
@@ -889,12 +1136,14 @@ routes = [
     Route("/api/registry/agents/{agent_id:str}", get_agent_api, methods=["GET"]),
     Route("/api/registry/agents/{agent_id:str}", unregister_agent_api, methods=["DELETE"]),
     Route("/api/registry/agents/{agent_id:str}/ping", ping_agent_api, methods=["POST"]),
+    Route("/api/registry/agents/{agent_id:str}/sync-skills", sync_agent_skills_api, methods=["POST"]),
     Route("/api/auth/login", auth_login, methods=["POST"]),
     Route("/api/auth/logout", auth_logout, methods=["POST"]),
     Route("/api/auth/me", auth_me, methods=["GET"]),
     Route("/api/feed", get_live_feed, methods=["GET"]),
     Route("/api/decisions", get_decisions, methods=["GET"]),
     Route("/api/decisions/{decision_id:str}/respond", respond_to_decision, methods=["POST"]),
+    Route("/api/proposals/{proposal_id:str}/respond", respond_to_proposal_api, methods=["POST"]),
     Route("/api/employees/{employee:str}/state", get_employee_state, methods=["GET"]),
     Route("/api/chat", chat, methods=["POST"]),
     Route("/api/meetings", create_meeting, methods=["POST"]),

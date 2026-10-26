@@ -233,26 +233,66 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         sys.exit("usage: python employee_agent.py <name> <port>   e.g. priya 9101")
     name, port = sys.argv[1].lower(), int(sys.argv[2])
-    skill = AgentSkill(
-        id="book_meeting", name="Book a meeting on this employee's calendar",
-        description=(f"Receives a meeting invite (title, start, end, location) and books it on "
-                     f"{name.title()}'s calendar after checking for conflicts. May ask the organizer "
-                     f"a question if there is a clash, or reject if {name.title()} cannot attend. "
-                     f"Output: JSON of the created event."),
-        tags=["calendar", "meetings"],
-        examples=['Invite: {"title":"Team Offsite","start":"2026-10-23T15:00:00",'
-                  '"end":"2026-10-23T17:00:00","location":"Room 4B"}'])
-    card = make_card(f"{name.title()}'s Calendar Agent",
-                     f"Manages {name.title()}'s calendar, checks A2A reschedule requests for "
-                     f"conflicts, and accepts meeting invites.", port, skill)
+    skills = [
+        AgentSkill(
+            id="book_meeting",
+            name="Book a meeting on this employee's calendar",
+            description=(
+                f"Receives a meeting invite (title, start, end, location) and books it on "
+                f"{name.title()}'s calendar after checking for conflicts. May ask the organizer "
+                f"a question if there is a clash, or reject if {name.title()} cannot attend. "
+                f"Output: JSON of the created event."
+            ),
+            tags=["calendar", "meetings", "booking"],
+            examples=[
+                'Invite: {"title":"Team Offsite","start":"2026-10-23T15:00:00",'
+                '"end":"2026-10-23T17:00:00","location":"Room 4B"}'
+            ],
+        ),
+        AgentSkill(
+            id="check_conflicts",
+            name="Check calendar conflicts",
+            description=(
+                f"Checks {name.title()}'s calendar for overlapping events within the requested "
+                f"start and end time window."
+            ),
+            tags=["calendar", "conflicts", "availability"],
+        ),
+        AgentSkill(
+            id="reschedule_meeting",
+            name="Reschedule meeting on calendar",
+            description=(
+                f"Handles two-phase reschedule protocol (check_move preflight and commit_move) "
+                f"to move meetings safely without unapproved clashes."
+            ),
+            tags=["calendar", "reschedule", "move"],
+        ),
+        AgentSkill(
+            id="cancel_meeting",
+            name="Cancel or remove calendar meeting",
+            description=(
+                f"Removes and cleans up cancelled or deleted meetings from {name.title()}'s calendar."
+            ),
+            tags=["calendar", "cancel", "remove"],
+        ),
+    ]
+    card = make_card(
+        f"{name.title()}'s Calendar Agent",
+        f"Manages {name.title()}'s calendar, checks A2A reschedule requests for "
+        f"conflicts, and accepts meeting invites.",
+        port,
+        skills,
+    )
     # Initialize executor (and calendar verification) first
     executor = EmployeeExecutor(name)
 
     try:
         import agent_registry
+        skill_ids = [s.id for s in skills]
         existing = agent_registry.get_agent(name)
         if existing:
             agent_registry.update_agent_status(name, "online")
+            agent_registry.update_agent_skills(name, skill_ids)
         else:
             display_name = agent_registry.get_employee_names().get(name, f"{name.title()}")
             agent_registry.register_agent(
@@ -260,7 +300,7 @@ if __name__ == "__main__":
                 url=f"http://127.0.0.1:{port}",
                 name=display_name,
                 role="employee",
-                skills=["calendar", "meetings", "book_meeting"],
+                skills=skill_ids,
                 status="online",
             )
     except Exception as reg_err:

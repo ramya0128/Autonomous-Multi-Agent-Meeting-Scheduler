@@ -250,6 +250,16 @@
     .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px; }
     .skill-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; }
     .reg-actions { display: flex; gap: 6px; }
+
+    /* Organizer Proposal Banner & Quick Replies */
+    .proposal-card { background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); border: 1px solid #86efac; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08); }
+    .proposal-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .proposal-badge { font-size: 11px; font-weight: 700; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 3px 8px; border-radius: 999px; }
+    .chat-quick-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chat-quick-btn { border: 1px solid #c7d2fe; border-radius: 6px; background: #eef2ff; color: #3730a3; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .chat-quick-btn:hover { background: #e0e7ff; transform: translateY(-1px); }
+    .chat-quick-btn.danger { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
+    .chat-quick-btn.danger:hover { background: #ffe4e6; }
   </style>
 </head>
 <body>
@@ -306,6 +316,7 @@
       </div>
       <div class="error-banner" id="error-banner"></div>
       <div id="overview-page">
+      <div id="proposal-banner-container"></div>
       <section class="workspace-layout">
         <section class="panel chat-panel">
           <div class="panel-head">
@@ -439,9 +450,14 @@
           <label for="reg-agent-dept">Department</label>
           <input id="reg-agent-dept" placeholder="e.g. Operations">
         </div>
+        <div class="field full" id="reg-agent-cal-wrapper">
+          <label for="reg-agent-calendar-id">Google Calendar ID (Optional for Employee)</label>
+          <input id="reg-agent-calendar-id" placeholder="e.g. employee-calendar@group.calendar.google.com">
+          <span style="font-size:10px;color:var(--muted);margin-top:3px;display:block;">If using Google Calendar, specify the employee's calendar ID. Leave blank for local JSON calendar.</span>
+        </div>
         <div class="field full">
-          <label for="reg-agent-skills">Skills (comma-separated)</label>
-          <input id="reg-agent-skills" value="calendar, meetings, book_meeting">
+          <label for="reg-agent-skills">Skills (comma-separated, leave blank to auto-introspect)</label>
+          <input id="reg-agent-skills" placeholder="Auto-introspected from agent card if blank" value="">
         </div>
       </div>
       <div class="dialog-actions">
@@ -504,7 +520,7 @@
   </dialog>
 
   <script>
-    const state = { meetings: [], employees: [], calendars: {}, calendarErrors: {}, employeeRequests: [], backend: "fake" };
+    const state = { meetings: [], employees: [], calendars: {}, calendarErrors: {}, employeeRequests: [], pendingProposals: [], backend: "fake" };
     const employeeLabels = { priya: "Priya Sharma", arjun: "Arjun Mehta", meera: "Meera Iyer" };
     const isCalendarPage = location.pathname === "/calendars";
     const isRegistryPage = location.pathname === "/registry";
@@ -544,6 +560,23 @@
     function renderChat() {
       const log = $("#chat-log");
       log.replaceChildren();
+
+      // Check if there are active organizer proposals and sync them into chatMessages if not already shown
+      for (const prop of (state.pendingProposals || [])) {
+        if (!chatMessages.some((m) => m.proposalId === prop.id || (m.text && m.text.includes(prop.suggested_time)))) {
+          chatMessages.push({
+            role: "assistant",
+            proposalId: prop.id,
+            text: `🔔 ${prop.employee_name} suggested a new time for '${prop.meeting_title}': ${prop.suggested_time}${prop.note ? ` (${prop.note})` : ""}. Would you like to schedule the meeting at this time? (Please reply Yes or No)`,
+            quickReplies: [
+              { label: `✓ Yes, schedule for ${prop.suggested_time}`, decision: "yes" },
+              { label: `✕ No`, decision: "no" }
+            ],
+            pending: true,
+          });
+        }
+      }
+
       if (!chatMessages.length) {
         const welcome = document.createElement("div");
         welcome.className = "chat-message assistant";
@@ -554,6 +587,22 @@
         const bubble = document.createElement("div");
         bubble.className = `chat-message ${message.role}${message.pending ? " pending" : ""}`;
         bubble.textContent = message.text;
+        if (message.quickReplies && message.quickReplies.length && message.pending !== false) {
+          const actions = document.createElement("div");
+          actions.className = "chat-quick-actions";
+          for (const qr of message.quickReplies) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = `chat-quick-btn${qr.decision === "no" ? " danger" : ""}`;
+            btn.textContent = qr.label;
+            btn.onclick = async () => {
+              message.pending = false;
+              await submitProposalDecision(message.proposalId, qr.decision);
+            };
+            actions.append(btn);
+          }
+          bubble.append(actions);
+        }
         log.append(bubble);
       }
       log.scrollTop = log.scrollHeight;
@@ -934,7 +983,7 @@
                         <div class="agent-reg-avatar">${avatarInitial}</div>
                         <div>
                           <div class="agent-reg-name">${esc(a.name || a.id)}</div>
-                          <div class="agent-reg-id">id: ${esc(a.id)}</div>
+                          <div class="agent-reg-id">id: ${esc(a.id)}${a.metadata && a.metadata.google_calendar_id ? ` • <span style="color:var(--accent)" title="${esc(a.metadata.google_calendar_id)}">📅 ${esc(a.metadata.google_calendar_id.split('@')[0])}…</span>` : ''}</div>
                         </div>
                       </div>
                     </td>
@@ -965,6 +1014,55 @@
         container.innerHTML = `<div class="empty offline">Failed to load registry: ${esc(err.message)}</div>`;
       }
     }
+    function renderPendingProposals() {
+      const container = $("#proposal-banner-container");
+      if (!container) return;
+      const proposals = state.pendingProposals || [];
+      if (!proposals.length) {
+        container.innerHTML = "";
+        return;
+      }
+      container.innerHTML = proposals.map((prop) => `
+        <div class="proposal-card">
+          <div class="proposal-card-head">
+            <span class="proposal-badge">⏱ New Time Suggested</span>
+            <span style="font-size:11px;color:var(--muted)">Awaiting your decision (Yes / No)</span>
+          </div>
+          <div style="font-size:13px;color:var(--ink);margin:6px 0;">
+            <strong>${esc(prop.employee_name)}</strong> suggested moving <strong>'${esc(prop.meeting_title)}'</strong> to <strong>${esc(prop.suggested_time)}</strong>${prop.note ? ` <em>(${esc(prop.note)})</em>` : ""}.
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">Would you like to schedule the meeting at this time?</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button type="button" class="button" data-proposal-id="${esc(prop.id)}" data-proposal-decision="yes" style="padding:6px 14px;font-size:12px;">✓ Yes, Schedule Meeting</button>
+            <button type="button" class="button secondary" data-proposal-id="${esc(prop.id)}" data-proposal-decision="no" style="padding:6px 14px;font-size:12px;">✕ No</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function submitProposalDecision(proposalId, decision) {
+      try {
+        toast(decision === "yes" ? "Scheduling meeting for proposed time..." : "Declining proposed time...");
+        const res = await request(`/api/proposals/${encodeURIComponent(proposalId)}/respond`, {
+          method: "POST",
+          body: JSON.stringify({ decision })
+        });
+        chatMessages.push({
+          role: "user",
+          text: decision === "yes" ? "Yes, schedule this time" : "No, decline"
+        });
+        chatMessages.push({
+          role: "assistant",
+          text: res.message
+        });
+        renderChat();
+        await refresh();
+        toast(res.decision === "approved" ? "Meeting scheduled!" : "Proposal declined.");
+      } catch (err) {
+        toast(err.message || String(err));
+      }
+    }
+
     async function refresh() {
       try {
         const result = await request("/api/state");
@@ -976,6 +1074,7 @@
         state.calendars = result.calendars;
         state.calendarErrors = result.calendar_errors || {};
         state.employeeRequests = result.employee_requests || [];
+        state.pendingProposals = result.pending_proposals || [];
         state.backend = result.calendar_backend;
         if (result.user) {
           currentUser = result.user;
@@ -989,13 +1088,24 @@
         renderEmployees();
         renderCalendars();
         renderFeed();
+        renderPendingProposals();
+        renderChat();
         if (isRegistryPage) renderRegistry();
       } catch (error) {
         $("#error-banner").textContent = error.message;
         $("#error-banner").style.display = "block";
       }
     }
-    document.addEventListener("click", (event) => {
+
+    document.addEventListener("click", async (event) => {
+      const propBtn = event.target.closest("[data-proposal-id]");
+      if (propBtn) {
+        const pid = propBtn.dataset.proposalId;
+        const dec = propBtn.dataset.proposalDecision;
+        propBtn.disabled = true;
+        await submitProposalDecision(pid, dec);
+        return;
+      }
       const button = event.target.closest("#calendar-employee-nav [data-employee]");
       if (!button) return;
       selectedEmployee = button.dataset.employee;
@@ -1407,24 +1517,42 @@
     }
     const regForm = $("#register-agent-form");
     if (regForm) {
+      const roleSel = $("#reg-agent-role");
+      const calWrapper = $("#reg-agent-cal-wrapper");
+      if (roleSel && calWrapper) {
+        roleSel.addEventListener("change", () => {
+          calWrapper.style.display = roleSel.value === "employee" ? "" : "none";
+        });
+      }
+
       regForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const id = $("#reg-agent-id").value.trim().toLowerCase();
         const name = $("#reg-agent-name").value.trim();
         const url = $("#reg-agent-url").value.trim();
         const role = $("#reg-agent-role").value;
-        const dept = $("#reg-agent-dept").value.trim();
-        const rawSkills = $("#reg-agent-skills").value;
-        const skills = rawSkills.split(",").map(s => s.trim()).filter(Boolean);
+        const dept = $("#reg-agent-dept") ? $("#reg-agent-dept").value.trim() : "";
+        const calId = $("#reg-agent-calendar-id") ? $("#reg-agent-calendar-id").value.trim() : "";
+        const rawSkills = $("#reg-agent-skills").value.trim();
+        const skills = rawSkills ? rawSkills.split(",").map(s => s.trim()).filter(Boolean) : null;
         try {
           await request("/api/registry/agents", {
             method: "POST",
-            body: JSON.stringify({ id, name, url, role, skills, metadata: { department: dept } })
+            body: JSON.stringify({
+              id,
+              name,
+              url,
+              role,
+              skills,
+              calendar_id: calId || null,
+              metadata: { department: dept, ...(calId ? { google_calendar_id: calId } : {}) }
+            })
           });
           toast(`Agent '${name}' registered successfully!`);
           $("#register-agent-dialog").close();
           regForm.reset();
-          $("#reg-agent-skills").value = "calendar, meetings, book_meeting";
+          $("#reg-agent-skills").value = "";
+          if ($("#reg-agent-calendar-id")) $("#reg-agent-calendar-id").value = "";
           await renderRegistry();
           await refresh();
         } catch (err) {

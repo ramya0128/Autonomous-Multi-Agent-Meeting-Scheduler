@@ -150,5 +150,89 @@
     "pending_invitees": [],
     "declined_invitees": [],
     "notes": ""
+  },
+  {
+    "id": "introduction",
+    "title": "introduction",
+    "start": "2026-10-30T13:00:00+05:30",
+    "end": "2026-10-30T15:00:00+05:30",
+    "location": "",
+    "invitees": [
+      "ramya",
+      "rahul"
+    ],
+    "requested_invitees": [
+      "ramya",
+      "rahul"
+    ],
+    "pending_invitees": [],
+    "declined_invitees": [],
+    "notes": ""
+  },
+  {
+    "id": "hello",
+    "title": "hello",
+    "start": "2026-10-29T14:30:00+05:30",
+    "end": "2026-10-29T15:30:00+05:30",
+    "location": "",
+    "invitees": [],
+    "requested_invitees": [
+      "rahul"
+    ],
+    "pending_invitees": [],
+    "declined_invitees": [
+      "rahul"
+    ],
+    "notes": ""
+  },
+  {
+    "id": "meeting",
+    "title": "meeting",
+    "start": "2026-10-25T10:00:00+05:30",
+    "end": "2026-10-25T11:00:00+05:30",
+    "location": "",
+    "invitees": [
+      "arjun"
+    ],
+    "requested_invitees": [
+      "arjun"
+    ],
+    "pending_invitees": [],
+    "declined_invitees": [],
+    "notes": ""
+  },
+  {
+    "id": "review",
+    "title": "review",
+    "start": "2026-10-26T10:00:00+05:30",
+    "end": "2026-10-26T11:00:00+05:30",
+    "location": "",
+    "invitees": [],
+    "requested_invitees": [
+      "arjun"
+    ],
+    "pending_invitees": [],
+    "declined_invitees": [],
+    "notes": "",
+    "status": "SCHEDULED",
+    "invite_results": {}
+  },
+  {
+    "id": "meeting-2",
+    "title": "Meeting",
+    "start": "2026-10-26T10:00:00+05:30",
+    "end": "2026-10-26T11:00:00+05:30",
+    "location": "",
+    "invitees": [
+      "priya",
+      "ramya"
+    ],
+    "requested_invitees": [
+      "priya",
+      "ramya"
+    ],
+    "pending_invitees": [],
+    "declined_invitees": [],
+    "notes": ""
   }
 ]

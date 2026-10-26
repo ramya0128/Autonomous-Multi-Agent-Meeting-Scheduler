@@ -1,0 +1,28 @@
+[
+  {
+    "id": "prop-75cc44d8",
+    "meeting_id": "review",
+    "meeting_title": "review",
+    "employee": "arjun",
+    "employee_name": "Arjun",
+    "suggested_time": "schedule on 26th october 10 am",
+    "note": "",
+    "status": "SUPERSEDED",
+    "created_at": "2026-10-24T15:43:24+05:30",
+    "resolved_at": "2026-10-24T15:43:26+05:30",
+    "decision": null
+  },
+  {
+    "id": "prop-a1a6b5f6",
+    "meeting_id": "review",
+    "meeting_title": "review",
+    "employee": "arjun",
+    "employee_name": "Arjun",
+    "suggested_time": "schedule on 26th october 10 am",
+    "note": "",
+    "status": "RESOLVED",
+    "created_at": "2026-10-24T15:43:26+05:30",
+    "resolved_at": "2026-10-24T15:55:48+05:30",
+    "decision": "approved"
+  }
+]

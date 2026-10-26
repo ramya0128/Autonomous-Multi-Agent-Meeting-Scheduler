@@ -11,7 +11,8 @@ from a2a.types import (AgentCapabilities, AgentCard, AgentInterface,
                        AgentSkill, Task, TaskState, TaskStatus)
 
 
-def make_card(name, description, port, skill: AgentSkill) -> AgentCard:
+def make_card(name, description, port, skill: AgentSkill | list[AgentSkill]) -> AgentCard:
+    skills_list = skill if isinstance(skill, list) else [skill]
     return AgentCard(
         name=name,
         description=description,
@@ -22,7 +23,7 @@ def make_card(name, description, port, skill: AgentSkill) -> AgentCard:
         capabilities=AgentCapabilities(streaming=True, push_notifications=False),
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain"],
-        skills=[skill],
+        skills=skills_list,
     )
 
 
@@ -40,8 +41,12 @@ async def open_task(context: RequestContext, event_queue: EventQueue) -> None:
 from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from starlette.routing import Route
 
-from storage import verify_agent_token
+try:
+    from storage import verify_agent_token
+except ImportError:
+    from agents.storage import verify_agent_token
 
 
 class AgentAuthMiddleware(BaseHTTPMiddleware):
@@ -60,9 +65,12 @@ def serve(card: AgentCard, executor, port: int) -> None:
         task_store=InMemoryTaskStore(),
         agent_card=card,
     )
+    card_routes = list(create_agent_card_routes(card))
+    alias_routes = [Route("/.well-known/agent.json", r.endpoint, methods=["GET"]) for r in card_routes]
     app = Starlette(
         routes=[
-            *create_agent_card_routes(card),
+            *card_routes,
+            *alias_routes,
             *create_jsonrpc_routes(handler, rpc_url="/"),
         ],
         middleware=[Middleware(AgentAuthMiddleware)],

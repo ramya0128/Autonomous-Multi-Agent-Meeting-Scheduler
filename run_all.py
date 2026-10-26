@@ -172,11 +172,13 @@ def main():
                         svc_id = svc.get("id", svc["name"])
                         crash_counts[svc_id] = crash_counts.get(svc_id, 0) + 1
                         if crash_counts[svc_id] > 5:
-                            print(f"\n[Supervisor] ERROR: {svc['name']} repeatedly crashed ({crash_counts[svc_id]} times). Pausing auto-restart.")
-                            svc["proc"] = None
-                            continue
+                            print(f"\n[Supervisor] WARNING: {svc['name']} stopped repeatedly ({crash_counts[svc_id]} times). Cooling down 10s before retry...")
+                            time.sleep(10)
+                            crash_counts[svc_id] = 0
                         print(f"\n[Supervisor] WARNING: {svc['name']} stopped (exit code {ret}). Auto-restarting...")
                         start_service(svc)
+                elif svc.get("id") != "web_dashboard":
+                    start_service(svc)
     except KeyboardInterrupt:
         print("\n\n[Supervisor] Shutting down all services...")
         for svc in SERVICES:

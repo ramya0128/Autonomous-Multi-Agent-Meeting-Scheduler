@@ -140,9 +140,61 @@ class AgentRegistryTests(unittest.TestCase):
         agent_registry.unregister_agent("kavya")
         self.assertNotIn("kavya", company_tools.EMPLOYEES)
 
+    def test_default_employees_have_actual_operational_skills(self):
+        priya = agent_registry.get_agent("priya")
+        self.assertIsNotNone(priya)
+        expected_skills = ["book_meeting", "check_conflicts", "reschedule_meeting", "cancel_meeting"]
+        self.assertEqual(priya["skills"], expected_skills)
+
+    def test_introspect_agent_skills_from_mock_card(self):
+        fake_card = {
+            "name": "Test Agent",
+            "skills": [
+                {"id": "book_meeting", "name": "Book meeting"},
+                {"id": "custom_interview", "name": "Interview scheduling"},
+            ],
+        }
+        with patch("httpx.Client") as mock_client_cls:
+            mock_client = mock_client_cls.return_value.__enter__.return_value
+            mock_resp = unittest.mock.MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.json.return_value = fake_card
+            mock_client.get.return_value = mock_resp
+
+            skills = agent_registry.introspect_agent_skills("http://127.0.0.1:9199")
+            self.assertEqual(skills, ["book_meeting", "custom_interview"])
+
+    def test_register_agent_auto_introspects_skills(self):
+        fake_card = {
+            "name": "Introspected Agent",
+            "skills": [
+                {"id": "smart_scheduling"},
+                {"id": "check_conflicts"},
+            ],
+        }
+        with patch("httpx.Client") as mock_client_cls:
+            mock_client = mock_client_cls.return_value.__enter__.return_value
+            mock_resp = unittest.mock.MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.json.return_value = fake_card
+            mock_client.get.return_value = mock_resp
+
+            agent = agent_registry.register_agent("bot_x", "http://127.0.0.1:9198")
+            self.assertEqual(agent["skills"], ["smart_scheduling", "check_conflicts"])
+
+    def test_update_agent_skills(self):
+        agent_registry.register_agent("worker", "http://127.0.0.1:9197", skills=["skill_a"])
+        self.assertEqual(agent_registry.get_agent("worker")["skills"], ["skill_a"])
+
+        updated = agent_registry.update_agent_skills("worker", ["skill_b", "skill_c"])
+        self.assertTrue(updated)
+        self.assertEqual(agent_registry.get_agent("worker")["skills"], ["skill_b", "skill_c"])
+
 
 class AgentRegistryAPITests(unittest.TestCase):
     def setUp(self):
+        from agents import calendar_backend
+        self._orig_google_cal_ids = dict(calendar_backend.GOOGLE_CALENDAR_IDS)
         self.temp_dir = tempfile.TemporaryDirectory()
         self.orig_data_dir = os.environ.get("DATA_DIR")
         os.environ["DATA_DIR"] = self.temp_dir.name
@@ -156,6 +208,12 @@ class AgentRegistryAPITests(unittest.TestCase):
         else:
             os.environ.pop("DATA_DIR", None)
         self.temp_dir.cleanup()
+        from agents import calendar_backend
+        calendar_backend.GOOGLE_CALENDAR_IDS.clear()
+        calendar_backend.GOOGLE_CALENDAR_IDS.update(self._orig_google_cal_ids)
+        if "calendar_backend" in sys.modules:
+            sys.modules["calendar_backend"].GOOGLE_CALENDAR_IDS.clear()
+            sys.modules["calendar_backend"].GOOGLE_CALENDAR_IDS.update(self._orig_google_cal_ids)
 
     def test_get_registered_agents_api(self):
         resp = self.client.get("/api/registry/agents")
@@ -185,6 +243,32 @@ class AgentRegistryAPITests(unittest.TestCase):
         get_resp = self.client.get("/api/registry/agents/ananya")
         self.assertEqual(get_resp.status_code, 200)
         self.assertEqual(get_resp.json()["agent"]["name"], "Ananya Roy")
+
+    def test_register_agent_api_with_calendar_id(self):
+        payload = {
+            "id": "karan",
+            "name": "Karan Singhal",
+            "url": "http://127.0.0.1:9110",
+            "role": "employee",
+            "calendar_id": "karan-cal-123@group.calendar.google.com",
+            "metadata": {"team": "Sales"},
+        }
+        resp = self.client.post("/api/registry/agents", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        res_data = resp.json()
+        self.assertTrue(res_data["success"])
+        self.assertEqual(
+            res_data["agent"]["metadata"]["google_calendar_id"],
+            "karan-cal-123@group.calendar.google.com",
+        )
+        from agents import calendar_backend
+        self.assertEqual(
+            calendar_backend.get_google_calendar_id("karan"),
+            "karan-cal-123@group.calendar.google.com",
+        )
+        calendar_backend.GOOGLE_CALENDAR_IDS.pop("karan", None)
+        if "calendar_backend" in sys.modules:
+            sys.modules["calendar_backend"].GOOGLE_CALENDAR_IDS.pop("karan", None)
 
     def test_register_agent_api_validation_error(self):
         resp = self.client.post("/api/registry/agents", json={"id": "bad id!!", "url": "not-a-url"})
@@ -231,6 +315,16 @@ class AgentRegistryAPITests(unittest.TestCase):
             self.assertTrue(res["success"])
             self.assertTrue(res["agent"]["url"].startswith("http://127.0.0.1:"))
             self.assertEqual(mock_spawn.call_count, 1)
+
+
+    def test_sync_agent_skills_api(self):
+        with patch.object(web_ui.agent_registry, "introspect_agent_skills", return_value=["interview_scheduling", "book_meeting"]):
+            resp = self.client.post("/api/registry/agents/priya/sync-skills")
+            self.assertEqual(resp.status_code, 200)
+            res = resp.json()
+            self.assertTrue(res["success"])
+            self.assertEqual(res["skills"], ["interview_scheduling", "book_meeting"])
+            self.assertEqual(web_ui.agent_registry.get_agent("priya")["skills"], ["interview_scheduling", "book_meeting"])
 
 
 if __name__ == "__main__":

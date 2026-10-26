@@ -55,10 +55,13 @@ class MeetingDashboardTests(unittest.TestCase):
         web_ui.company.company_tools.MEETINGS = self.meetings
         web_ui.company.company_tools.MEETINGS_PATH = Path(self.temp_dir.name) / "meetings.json"
         web_ui.company.company_tools.MEETINGS_PATH.write_text(json.dumps(self.meetings), encoding="utf-8")
+        self.original_proposals_path = web_ui.storage.PROPOSALS_PATH
+        web_ui.storage.PROPOSALS_PATH = Path(self.temp_dir.name) / "pending_proposals.json"
         self.client = TestClient(web_ui.app)
 
     def tearDown(self):
         self.client.close()
+        web_ui.storage.PROPOSALS_PATH = self.original_proposals_path
         web_ui.company.company_tools.EMPLOYEES = self.original_employees
         web_ui.company.company_tools.MEETINGS = self.original_meetings
         web_ui.company.company_tools.MEETINGS_PATH = self.original_path
@@ -581,6 +584,118 @@ class MeetingDashboardTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         remove.assert_called_once_with("sprint")
+
+    def test_employee_suggest_time_creates_proposal_and_notifies_organizer(self):
+        # 1. Employee replies suggesting another time
+        reply_payload = {
+            "message": "Suggest another time: Tomorrow at 3:00 PM (Previous commitment)",
+        }
+        with patch.object(web_ui.company, "reply_to_employee", return_value="COMPLETED"):
+            resp = self.client.post("/api/meetings/sprint/invitees/meera/reply", json=reply_payload)
+        self.assertEqual(resp.status_code, 200)
+
+        # 2. Check pending proposal in storage and state
+        proposals = web_ui.storage.get_pending_proposals()
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0]["meeting_id"], "sprint")
+        self.assertEqual(proposals[0]["employee"], "meera")
+        self.assertEqual(proposals[0]["suggested_time"], "Tomorrow at 3:00 PM")
+        self.assertEqual(proposals[0]["status"], "PENDING")
+
+        state_resp = self.client.get("/api/state")
+        self.assertEqual(state_resp.status_code, 200)
+        state_data = state_resp.json()
+        self.assertIn("pending_proposals", state_data)
+        self.assertEqual(len(state_data["pending_proposals"]), 1)
+        self.assertEqual(state_data["pending_proposals"][0]["id"], proposals[0]["id"])
+
+        # 3. Check meeting object was updated to PENDING_ORGANIZER_APPROVAL
+        m = next((item for item in web_ui.company.company_tools.MEETINGS if item["id"] == "sprint"), None)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.get("status"), "PENDING_ORGANIZER_APPROVAL")
+        self.assertEqual(m.get("suggested_reschedule", {}).get("suggested_time"), "Tomorrow at 3:00 PM")
+
+    def test_organizer_accepts_proposal_via_chat(self):
+        # Setup proposal
+        web_ui._handle_employee_time_suggestion(
+            meeting_id="sprint",
+            employee="meera",
+            suggested_time="Tomorrow at 3:00 PM",
+            note="Team sync clash",
+        )
+        proposals = web_ui.storage.get_pending_proposals()
+        self.assertEqual(len(proposals), 1)
+
+        # Mock agent talk and calendar
+        with patch.object(web_ui.company.company_tools, "send_invite", return_value="COMPLETED"), \
+             patch.object(web_ui.company.company_tools, "move_event", return_value=json.dumps({"status": "MOVED"})):
+            chat_resp = self.client.post("/api/chat", json={
+                "message": "Yes, please schedule it",
+                "conversation_id": "test-conv-1",
+            })
+        self.assertEqual(chat_resp.status_code, 200)
+        data = chat_resp.json()
+        self.assertIn("successfully scheduled", data["assistant"].lower())
+
+        # Check proposal is resolved
+        proposals_after = web_ui.storage.get_pending_proposals()
+        self.assertEqual(len(proposals_after), 0)
+
+        # Check meeting was rescheduled
+        m = next((item for item in web_ui.company.company_tools.MEETINGS if item["id"] == "sprint"), None)
+        self.assertIsNotNone(m)
+        self.assertIn("T15:00:00", m["start"])
+
+    def test_organizer_declines_proposal_via_chat(self):
+        web_ui._handle_employee_time_suggestion(
+            meeting_id="sprint",
+            employee="meera",
+            suggested_time="Tomorrow at 3:00 PM",
+        )
+        self.assertEqual(len(web_ui.storage.get_pending_proposals()), 1)
+
+        chat_resp = self.client.post("/api/chat", json={
+            "message": "No, that does not work",
+            "conversation_id": "test-conv-2",
+        })
+        self.assertEqual(chat_resp.status_code, 200)
+        data = chat_resp.json()
+        self.assertIn("declined", data["assistant"].lower())
+
+        # Check proposal is resolved
+        self.assertEqual(len(web_ui.storage.get_pending_proposals()), 0)
+
+        # Check meeting suggested_reschedule was cleared
+        m = next((item for item in web_ui.company.company_tools.MEETINGS if item["id"] == "sprint"), None)
+        self.assertNotIn("suggested_reschedule", m)
+
+    def test_respond_to_proposal_api(self):
+        prop = web_ui._handle_employee_time_suggestion(
+            meeting_id="sprint",
+            employee="meera",
+            suggested_time="Tomorrow at 4:00 PM",
+        )
+        proposal_id = prop["id"]
+
+        with patch.object(web_ui.company.company_tools, "send_invite", return_value="COMPLETED"), \
+             patch.object(web_ui.company.company_tools, "move_event", return_value=json.dumps({"status": "MOVED"})):
+            resp = self.client.post(f"/api/proposals/{proposal_id}/respond", json={"decision": "yes"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["decision"], "approved")
+
+        self.assertEqual(len(web_ui.storage.get_pending_proposals()), 0)
+
+    def test_resolve_suggested_time_to_iso(self):
+        fn = web_ui.company.company_tools.resolve_suggested_time_to_iso
+        # ISO string input
+        s, e = fn("2026-11-01T10:00:00+05:30")
+        self.assertEqual(s, "2026-11-01T10:00:00+05:30")
+        self.assertEqual(e, "2026-11-01T11:00:00+05:30")
+
+        # Tomorrow at 3:00 PM
+        s2, e2 = fn("Tomorrow at 3:00 PM")
+        self.assertIn("T15:00:00+05:30", s2)
+        self.assertIn("T16:00:00+05:30", e2)
 
 
 if __name__ == "__main__":

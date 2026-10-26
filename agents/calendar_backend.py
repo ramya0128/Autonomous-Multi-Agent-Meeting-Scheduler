@@ -14,7 +14,7 @@ DATA = Path(os.getenv(
 TZ_NAME = "Asia/Kolkata"
 TZ = ZoneInfo(TZ_NAME)
 _GOOGLE_CALENDARS = {}
-_GOOGLE_CALENDARS_LOCK = threading.Lock()
+_GOOGLE_CALENDARS_LOCK = threading.RLock()
 GOOGLE_CALENDAR_IDS = {
     "priya": "59a8d5d4bb1a7a8c1b7b82b17de4b0eec155be2e11c8a06330a802aebb52297d@group.calendar.google.com",
     "arjun": "fa3946c38c3f91849bf35a2d8f2e70cc3096958c47350b22fb10474e2ddca149@group.calendar.google.com",
@@ -29,13 +29,23 @@ def get_google_calendar_id(name: str) -> str | None:
         return GOOGLE_CALENDAR_IDS[norm_name]
     env_key = f"GOOGLE_CALENDAR_ID_{norm_name.upper()}"
     val = os.getenv(env_key)
+    if not val:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+            val = os.getenv(env_key)
+        except Exception:
+            pass
     if val:
         return val.strip()
     try:
         import agent_registry
         agent = agent_registry.get_agent(norm_name)
         if agent and agent.get("metadata", {}).get("google_calendar_id"):
-            return agent["metadata"]["google_calendar_id"].strip()
+            cal_id = agent["metadata"]["google_calendar_id"].strip()
+            with _GOOGLE_CALENDARS_LOCK:
+                GOOGLE_CALENDAR_IDS[norm_name] = cal_id
+            return cal_id
     except Exception:
         pass
     return None
@@ -386,7 +396,11 @@ def get_calendar(name: str, interactive: bool = False):
         return _GOOGLE_CALENDARS[name]
 
 
-def create_calendar_for_employee(agent_id: str, display_name: str | None = None) -> dict:
+def create_calendar_for_employee(
+    agent_id: str,
+    display_name: str | None = None,
+    calendar_id: str | None = None,
+) -> dict:
     """Ensure a calendar exists for an employee, automatically provisioning it if needed.
 
     Returns:
@@ -395,6 +409,16 @@ def create_calendar_for_employee(agent_id: str, display_name: str | None = None)
     backend = os.getenv("CALENDAR_BACKEND", "fake").strip().lower()
     norm_id = str(agent_id).strip().lower()
     title_name = (display_name or norm_id.title()).strip()
+
+    if calendar_id and str(calendar_id).strip():
+        norm_cal_id = str(calendar_id).strip()
+        with _GOOGLE_CALENDARS_LOCK:
+            GOOGLE_CALENDAR_IDS[norm_id] = norm_cal_id
+        return {
+            "backend": "google" if backend == "google" else backend,
+            "calendar_id": norm_cal_id,
+            "created": False,
+        }
 
     if backend != "google":
         cal_path = DATA / "calendars" / f"{norm_id}.json"

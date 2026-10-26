@@ -24,13 +24,20 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("Asia/Kolkata")
 _REGISTRY_LOCK = threading.RLock()
 
+DEFAULT_EMPLOYEE_SKILLS = [
+    "book_meeting",
+    "check_conflicts",
+    "reschedule_meeting",
+    "cancel_meeting",
+]
+
 DEFAULT_EMPLOYEES = {
     "priya": {
         "id": "priya",
         "name": "Priya Sharma",
         "url": "http://127.0.0.1:9101",
         "role": "employee",
-        "skills": ["calendar", "meetings", "book_meeting"],
+        "skills": list(DEFAULT_EMPLOYEE_SKILLS),
         "status": "online",
         "registered_at": "2026-10-23T00:00:00+05:30",
         "last_seen": "2026-10-23T00:00:00+05:30",
@@ -41,7 +48,7 @@ DEFAULT_EMPLOYEES = {
         "name": "Arjun Mehta",
         "url": "http://127.0.0.1:9102",
         "role": "employee",
-        "skills": ["calendar", "meetings", "book_meeting"],
+        "skills": list(DEFAULT_EMPLOYEE_SKILLS),
         "status": "online",
         "registered_at": "2026-10-23T00:00:00+05:30",
         "last_seen": "2026-10-23T00:00:00+05:30",
@@ -52,13 +59,94 @@ DEFAULT_EMPLOYEES = {
         "name": "Meera Iyer",
         "url": "http://127.0.0.1:9103",
         "role": "employee",
-        "skills": ["calendar", "meetings", "book_meeting"],
+        "skills": list(DEFAULT_EMPLOYEE_SKILLS),
         "status": "online",
         "registered_at": "2026-10-23T00:00:00+05:30",
         "last_seen": "2026-10-23T00:00:00+05:30",
         "metadata": {"department": "Design", "email": "meera@example.com"},
     },
 }
+
+
+def introspect_agent_skills(url: str, timeout: float = 3.0) -> list[str]:
+    """Introspect an agent's published skills by querying its A2A AgentCard endpoint.
+
+    Fetches /.well-known/agent.json from the agent's URL and returns the list of skill
+    IDs (or names). Returns an empty list if unreachable or if no skills are declared.
+    """
+    if not url or not isinstance(url, str):
+        return []
+    base_url = url.strip().rstrip("/")
+    endpoints = [
+        f"{base_url}/.well-known/agent-card.json",
+        f"{base_url}/.well-known/agent.json",
+    ]
+
+    headers = {}
+    try:
+        from storage import AGENT_AUTH_TOKEN
+        if AGENT_AUTH_TOKEN:
+            headers["Authorization"] = f"Bearer {AGENT_AUTH_TOKEN}"
+    except Exception:
+        pass
+
+    try:
+        import httpx
+        with httpx.Client(timeout=timeout, headers=headers) as client:
+            for card_url in endpoints:
+                try:
+                    resp = client.get(card_url)
+                    if resp.status_code == 200:
+                        card_data = resp.json()
+                        raw_skills = card_data.get("skills", [])
+                        extracted = []
+                        for s in raw_skills:
+                            if isinstance(s, dict):
+                                skill_id = s.get("id") or s.get("name")
+                                if skill_id and skill_id not in extracted:
+                                    extracted.append(str(skill_id))
+                            elif isinstance(s, str) and s.strip() and s.strip() not in extracted:
+                                extracted.append(s.strip())
+                        if extracted:
+                            return extracted
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return []
+
+
+def update_agent_skills(agent_id: str, skills: list[str]) -> bool:
+    """Update skills list for an agent in SQLite."""
+    if not agent_id:
+        return False
+    agent_id = str(agent_id).strip().lower()
+    now = _now_iso()
+    skills_json = json.dumps(list(skills))
+
+    with _REGISTRY_LOCK:
+        with _db_connection() as conn:
+            _init_db(conn)
+            cursor = conn.execute(
+                "UPDATE agents SET skills = ?, last_seen = ? WHERE id = ?;",
+                (skills_json, now, agent_id),
+            )
+            if cursor.rowcount > 0:
+                _sync_json_export(conn)
+                return True
+            return False
+
+
+def sync_agent_skills(agent_id: str, timeout: float = 3.0) -> list[str] | None:
+    """Introspect an agent's live endpoint and update its skills in SQLite."""
+    agent = get_agent(agent_id)
+    if not agent or not agent.get("url"):
+        return None
+    skills = introspect_agent_skills(agent["url"], timeout=timeout)
+    if skills:
+        update_agent_skills(agent_id, skills)
+        return skills
+    return agent.get("skills", [])
 
 
 def get_registry_db_path() -> Path:
@@ -236,6 +324,15 @@ def _init_db(conn: sqlite3.Connection) -> None:
             for _agent_id, info in DEFAULT_EMPLOYEES.items():
                 _insert_raw_agent(conn, info)
         _sync_json_export(conn)
+    else:
+        legacy_json = json.dumps(["calendar", "meetings", "book_meeting"])
+        cursor = conn.execute("SELECT COUNT(*) FROM agents WHERE skills = ?;", (legacy_json,))
+        if cursor.fetchone()[0] > 0:
+            conn.execute(
+                "UPDATE agents SET skills = ? WHERE skills = ?;",
+                (json.dumps(DEFAULT_EMPLOYEE_SKILLS), legacy_json),
+            )
+            _sync_json_export(conn)
 
 
 def init_registry() -> dict[str, dict]:
@@ -284,6 +381,7 @@ def register_agent(
     skills: list[str] | None = None,
     metadata: dict | None = None,
     status: str = "online",
+    introspect: bool = True,
 ) -> dict:
     """Register or update an agent dynamically in SQLite.
     
@@ -292,9 +390,10 @@ def register_agent(
         url: Base HTTP endpoint for the A2A agent (e.g. 'http://127.0.0.1:9104')
         name: Human-friendly display name (e.g. 'Rahul Verma')
         role: Agent role (default 'employee')
-        skills: List of skill strings (default calendar skills)
+        skills: List of skill strings (if None/empty and introspect=True, introspected from AgentCard)
         metadata: Optional dictionary of additional properties
         status: Initial agent status (default 'online')
+        introspect: Whether to query the agent's live AgentCard for declared skills
     """
     if not agent_id or not isinstance(agent_id, str):
         raise ValueError("Agent ID is required and must be a non-empty string.")
@@ -316,8 +415,19 @@ def register_agent(
     else:
         name = name.strip()
 
-    if skills is None:
-        skills = ["calendar", "meetings", "book_meeting"]
+    if (skills is None or len(skills) == 0) and introspect:
+        introspected = introspect_agent_skills(url)
+        if introspected:
+            skills = introspected
+
+    if skills is None or len(skills) == 0:
+        default_info = DEFAULT_EMPLOYEES.get(agent_id)
+        if default_info and default_info.get("skills"):
+            skills = list(default_info["skills"])
+        elif (role or "employee") == "employee":
+            skills = list(DEFAULT_EMPLOYEE_SKILLS)
+        else:
+            skills = []
 
     now = _now_iso()
 

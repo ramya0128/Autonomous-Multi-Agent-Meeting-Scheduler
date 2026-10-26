@@ -1437,8 +1437,11 @@
     "context_id": "context-review-one",
     "created_at": "2026-10-24T11:51:26+05:30",
     "timeout_at": "2026-10-24T11:56:26+05:30",
-    "status": "PENDING",
-    "response": null
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T12:19:23+05:30"
+    }
   },
   {
     "id": "dec-812b5202",
@@ -1450,8 +1453,11 @@
     "context_id": "context-review-two",
     "created_at": "2026-10-24T11:51:26+05:30",
     "timeout_at": "2026-10-24T11:56:26+05:30",
-    "status": "PENDING",
-    "response": null
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T12:19:23+05:30"
+    }
   },
   {
     "id": "dec-d8b8eee7",
@@ -1473,6 +1479,422 @@
       "suggested_time": "",
       "note": "Move client call to afternoon",
       "answered_at": "2026-10-24T11:51:27+05:30"
+    }
+  },
+  {
+    "id": "dec-acd20454",
+    "meeting_id": "review-one",
+    "employee": "meera",
+    "question": "Question for review-one",
+    "conflicts": [],
+    "task_id": "task-review-one",
+    "context_id": "context-review-one",
+    "created_at": "2026-10-24T12:24:15+05:30",
+    "timeout_at": "2026-10-24T12:29:15+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T12:29:16+05:30"
+    }
+  },
+  {
+    "id": "dec-28d1666a",
+    "meeting_id": "review-two",
+    "employee": "meera",
+    "question": "Question for review-two",
+    "conflicts": [],
+    "task_id": "task-review-two",
+    "context_id": "context-review-two",
+    "created_at": "2026-10-24T12:24:15+05:30",
+    "timeout_at": "2026-10-24T12:29:15+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T12:29:16+05:30"
+    }
+  },
+  {
+    "id": "dec-679b5c3e",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T12:24:15+05:30",
+    "timeout_at": "2026-10-24T12:29:15+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T12:24:15+05:30"
+    }
+  },
+  {
+    "id": "dec-85312747",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:03:40+05:30",
+    "timeout_at": "2026-10-24T15:08:40+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:03:40+05:30"
+    }
+  },
+  {
+    "id": "dec-22892fd4",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:04:39+05:30",
+    "timeout_at": "2026-10-24T15:09:39+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:04:39+05:30"
+    }
+  },
+  {
+    "id": "dec-ddc4ead6",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:05:35+05:30",
+    "timeout_at": "2026-10-24T15:10:35+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:05:35+05:30"
+    }
+  },
+  {
+    "id": "dec-7b0940cf",
+    "meeting_id": "review-one",
+    "employee": "meera",
+    "question": "Question for review-one",
+    "conflicts": [],
+    "task_id": "task-review-one",
+    "context_id": "context-review-one",
+    "created_at": "2026-10-24T15:07:03+05:30",
+    "timeout_at": "2026-10-24T15:12:03+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T15:12:03+05:30"
+    }
+  },
+  {
+    "id": "dec-3dac04c8",
+    "meeting_id": "review-two",
+    "employee": "meera",
+    "question": "Question for review-two",
+    "conflicts": [],
+    "task_id": "task-review-two",
+    "context_id": "context-review-two",
+    "created_at": "2026-10-24T15:07:03+05:30",
+    "timeout_at": "2026-10-24T15:12:03+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T15:12:03+05:30"
+    }
+  },
+  {
+    "id": "dec-87de4cd3",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:07:03+05:30",
+    "timeout_at": "2026-10-24T15:12:03+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:07:03+05:30"
+    }
+  },
+  {
+    "id": "dec-ab6ab241",
+    "meeting_id": "hello",
+    "employee": "rahul",
+    "question": "The meeting 'hello' (2026-10-29 14:30 - 15:30) overlaps with existing event 'Interview' (2026-10-29 14:00 - 15:00). Should we reschedule 'hello', skip the interview, or choose another time?",
+    "conflicts": [],
+    "task_id": "a2656a9b-7378-41fc-8543-bb077c03e71e",
+    "context_id": "092253f7-b42c-43a1-86f9-f33b9b8e386d",
+    "created_at": "2026-10-24T15:12:56+05:30",
+    "timeout_at": "2026-10-24T15:17:56+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "decline",
+      "suggested_time": "",
+      "note": "Suggest another time: schedule it at 4pm",
+      "answered_at": "2026-10-24T15:13:35+05:30"
+    }
+  },
+  {
+    "id": "dec-0d0871b5",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:29:48+05:30",
+    "timeout_at": "2026-10-24T15:34:48+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:29:48+05:30"
+    }
+  },
+  {
+    "id": "dec-161d7440",
+    "meeting_id": "review-one",
+    "employee": "meera",
+    "question": "Question for review-one",
+    "conflicts": [],
+    "task_id": "task-review-one",
+    "context_id": "context-review-one",
+    "created_at": "2026-10-24T15:30:55+05:30",
+    "timeout_at": "2026-10-24T15:35:55+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T15:35:57+05:30"
+    }
+  },
+  {
+    "id": "dec-033b84bd",
+    "meeting_id": "review-two",
+    "employee": "meera",
+    "question": "Question for review-two",
+    "conflicts": [],
+    "task_id": "task-review-two",
+    "context_id": "context-review-two",
+    "created_at": "2026-10-24T15:30:55+05:30",
+    "timeout_at": "2026-10-24T15:35:55+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T15:35:57+05:30"
+    }
+  },
+  {
+    "id": "dec-060e7005",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:30:56+05:30",
+    "timeout_at": "2026-10-24T15:35:56+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:30:56+05:30"
+    }
+  },
+  {
+    "id": "dec-c5286b85",
+    "meeting_id": "review-one",
+    "employee": "meera",
+    "question": "Question for review-one",
+    "conflicts": [],
+    "task_id": "task-review-one",
+    "context_id": "context-review-one",
+    "created_at": "2026-10-24T15:38:03+05:30",
+    "timeout_at": "2026-10-24T15:43:03+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T15:43:05+05:30"
+    }
+  },
+  {
+    "id": "dec-14abc693",
+    "meeting_id": "review-two",
+    "employee": "meera",
+    "question": "Question for review-two",
+    "conflicts": [],
+    "task_id": "task-review-two",
+    "context_id": "context-review-two",
+    "created_at": "2026-10-24T15:38:03+05:30",
+    "timeout_at": "2026-10-24T15:43:03+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-24T15:43:05+05:30"
+    }
+  },
+  {
+    "id": "dec-68f46c77",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:38:03+05:30",
+    "timeout_at": "2026-10-24T15:43:03+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:38:04+05:30"
+    }
+  },
+  {
+    "id": "dec-a04bf34e",
+    "meeting_id": "review",
+    "employee": "arjun",
+    "question": "The meeting 'review' (10:30 - 11:00) overlaps with your existing event 'meeting' (10:00 - 11:00). Would you like to reschedule 'review', skip it, or keep both (which would cause a conflict)?",
+    "conflicts": [],
+    "task_id": "c89c63e6-f9c4-4a08-87d2-3bffed3246b9",
+    "context_id": "9672a9b8-6ae2-4d70-977a-86f27b1e21f9",
+    "created_at": "2026-10-24T15:41:49+05:30",
+    "timeout_at": "2026-10-24T15:46:49+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "suggest_time",
+      "suggested_time": "schedule on 26th october 10 am",
+      "note": "Suggest another time: schedule on 26th october 10 am",
+      "answered_at": "2026-10-24T15:43:24+05:30"
+    }
+  },
+  {
+    "id": "dec-b1d2bdd8",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:56:29+05:30",
+    "timeout_at": "2026-10-24T16:01:29+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:56:29+05:30"
+    }
+  },
+  {
+    "id": "dec-2f0d37a5",
+    "meeting_id": "review-one",
+    "employee": "meera",
+    "question": "Question for review-one",
+    "conflicts": [],
+    "task_id": "task-review-one",
+    "context_id": "context-review-one",
+    "created_at": "2026-10-24T15:57:36+05:30",
+    "timeout_at": "2026-10-24T16:02:36+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-26T09:18:07+05:30"
+    }
+  },
+  {
+    "id": "dec-9a20dc50",
+    "meeting_id": "review-two",
+    "employee": "meera",
+    "question": "Question for review-two",
+    "conflicts": [],
+    "task_id": "task-review-two",
+    "context_id": "context-review-two",
+    "created_at": "2026-10-24T15:57:37+05:30",
+    "timeout_at": "2026-10-24T16:02:37+05:30",
+    "status": "TIMED_OUT",
+    "response": {
+      "action": "timeout",
+      "answered_at": "2026-10-26T09:18:07+05:30"
+    }
+  },
+  {
+    "id": "dec-9032b041",
+    "meeting_id": "offsite-sync",
+    "employee": "priya",
+    "question": "Client call overlaps the Team Offsite. Reschedule the call or skip the offsite?",
+    "conflicts": [
+      {
+        "event": "Client call"
+      }
+    ],
+    "task_id": "task-101",
+    "context_id": "ctx-101",
+    "created_at": "2026-10-24T15:57:37+05:30",
+    "timeout_at": "2026-10-24T16:02:37+05:30",
+    "status": "ANSWERED",
+    "response": {
+      "action": "approve_reschedule",
+      "suggested_time": "",
+      "note": "Move client call to afternoon",
+      "answered_at": "2026-10-24T15:57:37+05:30"
     }
   }
 ]

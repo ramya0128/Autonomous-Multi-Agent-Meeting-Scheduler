@@ -382,3 +382,77 @@ def get_all_task_sessions() -> dict[tuple[str, str], dict]:
             m_id, emp = key.split(":", 1)
             res[(m_id, emp)] = val
     return res
+
+
+# ============================================================================
+# Organizer Proposals (Alternative times suggested by employees)
+# ============================================================================
+PROPOSALS_PATH = DATA_DIR / "pending_proposals.json"
+
+
+def create_organizer_proposal(
+    meeting_id: str,
+    meeting_title: str,
+    employee: str,
+    suggested_time: str,
+    note: str = "",
+) -> dict:
+    proposal_id = f"prop-{uuid.uuid4().hex[:8]}"
+    prop = {
+        "id": proposal_id,
+        "meeting_id": meeting_id,
+        "meeting_title": meeting_title,
+        "employee": employee.lower(),
+        "employee_name": employee.title(),
+        "suggested_time": suggested_time,
+        "note": note,
+        "status": "PENDING",
+        "created_at": _now_iso(),
+        "resolved_at": None,
+        "decision": None,
+    }
+    with _STORE_LOCK:
+        props = _read_json(PROPOSALS_PATH, [])
+        for p in props:
+            if p.get("meeting_id") == meeting_id and p.get("status") == "PENDING":
+                p["status"] = "SUPERSEDED"
+                p["resolved_at"] = _now_iso()
+        props.append(prop)
+        _atomic_write(PROPOSALS_PATH, json.dumps(props, indent=2, ensure_ascii=False))
+    return prop
+
+
+def get_pending_proposals(meeting_id: str | None = None) -> list[dict]:
+    with _STORE_LOCK:
+        props = _read_json(PROPOSALS_PATH, [])
+    pending = [p for p in props if p.get("status") == "PENDING"]
+    if meeting_id:
+        pending = [p for p in pending if p.get("meeting_id") == meeting_id]
+    return pending
+
+
+def get_pending_proposal_by_id(proposal_id: str) -> dict | None:
+    with _STORE_LOCK:
+        props = _read_json(PROPOSALS_PATH, [])
+    for p in props:
+        if p.get("id") == proposal_id:
+            return dict(p)
+    return None
+
+
+def resolve_organizer_proposal(proposal_id: str, decision: str) -> dict | None:
+    with _STORE_LOCK:
+        props = _read_json(PROPOSALS_PATH, [])
+        target = None
+        for p in props:
+            if p.get("id") == proposal_id and p.get("status") == "PENDING":
+                target = p
+                break
+        if not target:
+            return None
+        target["status"] = "RESOLVED"
+        target["decision"] = decision
+        target["resolved_at"] = _now_iso()
+        _atomic_write(PROPOSALS_PATH, json.dumps(props, indent=2, ensure_ascii=False))
+        return dict(target)
+

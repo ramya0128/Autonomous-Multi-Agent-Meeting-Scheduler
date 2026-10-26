@@ -7,7 +7,7 @@
     "meeting_id": "review-one",
     "kind": "invite",
     "employee": "meera",
-    "updated_at": "2026-10-24T11:51:26+05:30"
+    "updated_at": "2026-10-24T15:57:37+05:30"
   },
   "review-two:meera": {
     "task_id": "task-review-two",
@@ -17,7 +17,7 @@
     "meeting_id": "review-two",
     "kind": "invite",
     "employee": "meera",
-    "updated_at": "2026-10-24T11:51:26+05:30"
+    "updated_at": "2026-10-24T15:57:37+05:30"
   },
   "salary-discussion:arjun": {
     "task_id": "task-1",
@@ -27,7 +27,7 @@
     "meeting_id": "salary-discussion",
     "kind": "invite",
     "employee": "arjun",
-    "updated_at": "2026-10-24T11:51:27+05:30"
+    "updated_at": "2026-10-24T15:57:38+05:30"
   },
   "prod-review:priya": {
     "task_id": "3bcc3446-6c95-4aca-aee3-21d0e60785dc",
@@ -90,14 +90,14 @@
     "updated_at": "2026-10-19T15:59:48+05:30"
   },
   "sprint:meera": {
-    "task_id": "old-task",
-    "context_id": "old-ctx",
-    "state": "REJECTED",
-    "outcome": "REJECTED: Decline: cannot make it",
+    "task_id": "3e9288b1-5137-49ec-80d7-25c60194ea55",
+    "context_id": "d3d6603e-f3f9-4e04-b4ad-52b2992e4528",
+    "state": "FAILED",
+    "outcome": "FAILED: No calendar event found for meeting 'sprint'.",
     "meeting_id": "sprint",
-    "kind": "invite",
+    "kind": "operation",
     "employee": "meera",
-    "updated_at": "2026-10-24T11:51:27+05:30"
+    "updated_at": "2026-10-24T15:57:39+05:30"
   },
   "review-3:meera": {
     "task_id": "c3891b42-3d15-4a21-be3b-ca466f5801cb",
@@ -208,5 +208,75 @@
     "kind": "invite",
     "employee": "rahul",
     "updated_at": "2026-10-24T11:18:33+05:30"
+  },
+  "introduction:ramya": {
+    "task_id": "258479e4-5faa-44e9-86f0-1a4a3331ee05",
+    "context_id": "429f44c1-d0e2-4d91-9ed6-f671e7b9038c",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"obbvf0jnjurplunjjpgh6sbs4k\", \"title\": \"introduction\", \"start\": \"2026-10-30T13:00:00+05:30\", \"end\": \"2026-10-30T15:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=b2JidmYwam5qdXJwbHVuampwZ2g2c2JzNGsgMmJkMjU0ZGJhMWY0MjlkZDkxNWRkMTcxN2FiYTYwYjU2MjQxZjU4NzYyMzY0YzZkNTI4NWNhZDY3M2Y5MGZhNUBn\", \"employee\": \"ramya\", \"summary\": \"\"}",
+    "meeting_id": "introduction",
+    "kind": "invite",
+    "employee": "ramya",
+    "updated_at": "2026-10-24T15:11:14+05:30"
+  },
+  "introduction:rahul": {
+    "task_id": "1274765f-9911-479a-9f5f-0d1a923f1d8c",
+    "context_id": "41de1371-3f8d-4a2a-a3af-17d1c0076525",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"9idlmc3pjbbr4n0osnl2j8cmak\", \"title\": \"introduction\", \"start\": \"2026-10-30T13:00:00+05:30\", \"end\": \"2026-10-30T15:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=OWlkbG1jM3BqYmJyNG4wb3NubDJqOGNtYWsgNzYzY2Q0Y2FjYzU5YjIxYmI3Nzk3MzhiY2UwZjFhZTYzYTdlNWRkYTBjNzljNzM1N2VmMzc3MGJjMzk5MjA2NkBn\", \"employee\": \"rahul\", \"summary\": \"\"}",
+    "meeting_id": "introduction",
+    "kind": "invite",
+    "employee": "rahul",
+    "updated_at": "2026-10-24T15:11:33+05:30"
+  },
+  "hello:rahul": {
+    "task_id": "a2656a9b-7378-41fc-8543-bb077c03e71e",
+    "context_id": "092253f7-b42c-43a1-86f9-f33b9b8e386d",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Employee suggested alternative time at 2026-10-29T16:00:00+05:30",
+    "meeting_id": "hello",
+    "kind": "invite",
+    "employee": "rahul",
+    "updated_at": "2026-10-24T15:13:37+05:30"
+  },
+  "meeting:arjun": {
+    "task_id": "940a0bed-8ba8-41c6-bd5a-c374ed608d73",
+    "context_id": "3bbc9da1-3af8-4487-82db-5943fcd675d0",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"qomad99pjea4glhkuhi6nhpk9g\", \"title\": \"meeting\", \"start\": \"2026-10-25T10:00:00+05:30\", \"end\": \"2026-10-25T11:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=cW9tYWQ5OXBqZWE0Z2xoa3VoaTZuaHBrOWcgZmEzOTQ2YzM4YzNmOTE4NDliZjM1YTJkOGYyZTcwY2MzMDk2OTU4YzQ3MzUwYjIyZmIxMDQ3NGUyZGRjYTE0OUBn\", \"employee\": \"arjun\", \"summary\": \"\"}",
+    "meeting_id": "meeting",
+    "kind": "invite",
+    "employee": "arjun",
+    "updated_at": "2026-10-24T15:40:21+05:30"
+  },
+  "review:arjun": {
+    "task_id": "c89c63e6-f9c4-4a08-87d2-3bffed3246b9",
+    "context_id": "9672a9b8-6ae2-4d70-977a-86f27b1e21f9",
+    "state": "REJECTED",
+    "outcome": "REJECTED: Employee suggests rescheduling to 2026-10-26 10:00",
+    "meeting_id": "review",
+    "kind": "invite",
+    "employee": "arjun",
+    "updated_at": "2026-10-24T15:43:26+05:30"
+  },
+  "meeting-2:priya": {
+    "task_id": "ce4c8310-deb4-4719-a5d9-e7fe5cad8cc4",
+    "context_id": "a312661e-95f4-464a-b632-3757c7faeda0",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"ia9pt0jejm3eb7l30pskjbck1o\", \"title\": \"Meeting\", \"start\": \"2026-10-26T10:00:00+05:30\", \"end\": \"2026-10-26T11:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=aWE5cHQwamVqbTNlYjdsMzBwc2tqYmNrMW8gNTlhOGQ1ZDRiYjFhN2E4YzFiN2I4MmIxN2RlNGIwZWVjMTU1YmUyZTExYzhhMDYzMzBhODAyYWViYjUyMjk3ZEBn\", \"employee\": \"priya\", \"summary\": \"\"}",
+    "meeting_id": "meeting-2",
+    "kind": "invite",
+    "employee": "priya",
+    "updated_at": "2026-10-26T09:18:58+05:30"
+  },
+  "meeting-2:ramya": {
+    "task_id": "dde786a0-27bb-4d0d-8d79-55c9791f6083",
+    "context_id": "fffb0700-1e89-4581-a3a2-57c1fe6d6b1e",
+    "state": "COMPLETED",
+    "outcome": "COMPLETED: {\"id\": \"7hakfngn9mhq69hnog3cb1kd90\", \"title\": \"Meeting\", \"start\": \"2026-10-26T10:00:00+05:30\", \"end\": \"2026-10-26T11:00:00+05:30\", \"location\": \"\", \"link\": \"https://www.google.com/calendar/event?eid=N2hha2ZuZ245bWhxNjlobm9nM2NiMWtkOTAgMmJkMjU0ZGJhMWY0MjlkZDkxNWRkMTcxN2FiYTYwYjU2MjQxZjU4NzYyMzY0YzZkNTI4NWNhZDY3M2Y5MGZhNUBn\", \"employee\": \"ramya\", \"summary\": \"\"}",
+    "meeting_id": "meeting-2",
+    "kind": "invite",
+    "employee": "ramya",
+    "updated_at": "2026-10-26T09:19:18+05:30"
   }
 }

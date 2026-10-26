@@ -5,7 +5,7 @@ import os
 import re
 import tempfile
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -595,11 +595,26 @@ def _is_yes(answer):
     return normalized in {
         "y",
         "yes",
+        "sure",
+        "ok",
+        "okay",
         "proceed",
         "continue",
         "move anyway",
         "yes, proceed",
-    } or normalized.startswith(("yes ", "proceed ", "continue "))
+        "yes please",
+        "yes, please",
+    } or normalized.startswith((
+        "yes ",
+        "yes,",
+        "yes.",
+        "sure",
+        "ok",
+        "okay",
+        "proceed",
+        "continue",
+        "schedule",
+    )) or "yes" in normalized.split()
 
 
 def _is_no(answer):
@@ -610,7 +625,17 @@ def _is_no(answer):
         "cancel",
         "cancel the move",
         "keep the original time",
-    } or normalized.startswith(("no ", "no,", "cancel "))
+        "decline",
+        "nope",
+    } or normalized.startswith((
+        "no ",
+        "no,",
+        "no.",
+        "cancel",
+        "decline",
+        "don't",
+        "dont",
+    )) or "no" in normalized.split()
 
 
 def _move_payload(meeting, start, end, operation):
@@ -1366,6 +1391,174 @@ def list_registered_agents(role: str | None = None) -> str:
         return json.dumps({"error": f"Failed to query agent registry: {error}"})
 
 
+def resolve_suggested_time_to_iso(
+    text: str,
+    duration_minutes: int = 60,
+    base_dt: datetime | None = None,
+) -> tuple[str, str]:
+    """Parse an ISO string or natural language date/time into start and end ISO datetimes."""
+    base_dt = base_dt or datetime.now(ZoneInfo("Asia/Kolkata"))
+    text = (text or "").strip()
+
+    # 1. Direct ISO datetime check
+    iso_candidate = text.replace(" ", "T")
+    try:
+        dt = datetime.fromisoformat(iso_candidate)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("Asia/Kolkata"))
+        start = dt.astimezone(ZoneInfo("Asia/Kolkata"))
+        end = start + timedelta(minutes=duration_minutes)
+        return start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds")
+    except Exception:
+        pass
+
+    lower = text.lower()
+
+    # 2. Check for month names and day of month (e.g. "26th october", "october 26")
+    from datetime import date
+    months = {
+        "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+        "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
+        "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+    }
+
+    target_year = base_dt.year
+    target_month = None
+    target_day = None
+
+    # Check for '26th october' or '26 october'
+    m1 = re.search(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]+)\b", lower)
+    if m1 and m1.group(2) in months:
+        target_day = int(m1.group(1))
+        target_month = months[m1.group(2)]
+    else:
+        # Check for 'october 26th' or 'october 26'
+        m2 = re.search(r"\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b", lower)
+        if m2 and m2.group(1) in months:
+            target_month = months[m2.group(1)]
+            target_day = int(m2.group(2))
+
+    if target_month and target_day:
+        try:
+            target_date = date(target_year, target_month, target_day)
+        except ValueError:
+            target_date = base_dt.date() + timedelta(days=1)
+    elif "tomorrow" in lower:
+        target_date = base_dt.date() + timedelta(days=1)
+    elif "today" in lower:
+        target_date = base_dt.date()
+    else:
+        weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        days_ahead = 1
+        for i, w in enumerate(weekdays):
+            if w in lower:
+                target_wd = i
+                cur_wd = base_dt.weekday()
+                days_ahead = (target_wd - cur_wd) % 7
+                if days_ahead == 0:
+                    days_ahead = 7
+                break
+        target_date = base_dt.date() + timedelta(days=days_ahead)
+
+    # 3. Extract time: prioritize explicit AM/PM or 'at HH:MM' over numbers
+    hour, minute = 10, 0
+    t_match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b", lower)
+    if not t_match:
+        t_match = re.search(r"\bat\s+(\d{1,2})(?::(\d{2}))?\b", lower)
+    if not t_match:
+        t_match = re.search(r"\b(\d{1,2}):(\d{2})\b", lower)
+
+    if t_match:
+        h = int(t_match.group(1))
+        m = int(t_match.group(2) or 0) if len(t_match.groups()) >= 2 and t_match.group(2) else 0
+        ampm = t_match.group(3) if len(t_match.groups()) >= 3 else None
+        if ampm == "pm" and h < 12:
+            h += 12
+        elif ampm == "am" and h == 12:
+            h = 0
+        elif not ampm and h < 8:
+            h += 12
+        hour, minute = min(max(h, 0), 23), min(max(m, 0), 59)
+    elif "afternoon" in lower:
+        hour = 14
+    elif "evening" in lower:
+        hour = 17
+    elif "morning" in lower:
+        hour = 10
+
+    start = datetime(
+        target_date.year, target_date.month, target_date.day, hour, minute, tzinfo=ZoneInfo("Asia/Kolkata")
+    )
+    end = start + timedelta(minutes=duration_minutes)
+    return start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds")
+
+
+def apply_reschedule_to_meeting(meeting_id: str, start_iso: str, end_iso: str) -> dict:
+    """Applies a new time to a meeting and updates/re-invites all attendee calendar agents."""
+    meeting = _meeting_for_id(meeting_id)
+    if not meeting:
+        return {"status": "ERROR", "error": f"No meeting with id '{meeting_id}'"}
+
+    # Attempt to move existing booked calendar events
+    has_booked = bool(meeting.get("invitees"))
+    if has_booked:
+        try:
+            res_raw = move_event(meeting_id, start_iso, end_iso, ask_user_fn=lambda q: "yes")
+            res_dict = json.loads(res_raw) if isinstance(res_raw, str) else res_raw
+            if res_dict.get("status") in ("COMPLETED", "MOVED"):
+                with MEETINGS_LOCK:
+                    m = next((item for item in MEETINGS if item.get("id") == meeting_id), None)
+                    if m:
+                        m["start"] = start_iso
+                        m["end"] = end_iso
+                        m["status"] = "SCHEDULED"
+                        m.pop("suggested_reschedule", None)
+                        _save_meetings(MEETINGS)
+                return {
+                    "status": "COMPLETED",
+                    "meeting_id": meeting_id,
+                    "start": start_iso,
+                    "end": end_iso,
+                    "details": res_dict,
+                }
+        except Exception:
+            pass
+
+    with MEETINGS_LOCK:
+        meeting = next((item for item in MEETINGS if item.get("id") == meeting_id), None)
+        if not meeting:
+            return {"status": "ERROR", "error": f"No meeting with id '{meeting_id}'"}
+        meeting["start"] = start_iso
+        meeting["end"] = end_iso
+        meeting["status"] = "SCHEDULED"
+        meeting.pop("suggested_reschedule", None)
+        all_invitees = list(dict.fromkeys(
+            meeting.get("invitees", [])
+            + meeting.get("pending_invitees", [])
+            + meeting.get("requested_invitees", [])
+            + meeting.get("declined_invitees", [])
+        ))
+        meeting["requested_invitees"] = all_invitees
+        meeting["invitees"] = []
+        meeting["pending_invitees"] = []
+        meeting["declined_invitees"] = []
+        meeting["invite_results"] = {}
+        _save_meetings(MEETINGS)
+
+    invite_results = {}
+    for emp in all_invitees:
+        invite_results[emp] = send_invite(emp, meeting_id)
+
+    meeting = _meeting_for_id(meeting_id)
+    return {
+        "status": "COMPLETED",
+        "meeting": meeting,
+        "invite_results": invite_results,
+        "start": start_iso,
+        "end": end_iso,
+    }
+
+
 IMPLS = {
     "list_meetings": list_meetings,
     "create_meeting": create_meeting,
@@ -1383,4 +1576,5 @@ IMPLS = {
     "escalate_to_organizer": escalate_to_organizer,
     "list_registered_agents": list_registered_agents,
 }
+
 

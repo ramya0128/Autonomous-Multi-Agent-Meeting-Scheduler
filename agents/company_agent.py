@@ -36,6 +36,8 @@ ask_user = company_tools.ask_user
 find_alternative_times = company_tools.find_alternative_times
 escalate_to_organizer = company_tools.escalate_to_organizer
 list_registered_agents = company_tools.list_registered_agents
+resolve_suggested_time_to_iso = company_tools.resolve_suggested_time_to_iso
+apply_reschedule_to_meeting = company_tools.apply_reschedule_to_meeting
 
 
 if __name__ == "__main__":
